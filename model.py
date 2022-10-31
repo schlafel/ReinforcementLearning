@@ -22,8 +22,8 @@ class Linear_QNet(tf.keras.Model):
         self.dense2 = Dense(hidden_size)
         self.output_layer = Dense(output_size,activation = "linear")
 
-        self.compile(tf.keras.optimizers.Adam(learning_rate=1e-3),
-                     )
+        # self.compile(tf.keras.optimizers.Adam(learning_rate=1e-3),
+        #              )
 
     def call(self,x):
         #x = Input(x,)
@@ -49,28 +49,34 @@ class QTrainer:
         self.optim = tf.keras.optimizers.Adam(learning_rate = self.lr)
         self.criterion = tf.keras.losses.MeanSquaredError()
 
-    @tf.function
+    #@tf.function
     def train_step(self,state,action,reward,next_state,game_over):
         state = tf.convert_to_tensor(state,dtype = tf.float32)
         next_state = tf.convert_to_tensor(next_state,dtype = tf.float32)
-        action = tf.convert_to_tensor(action,dtype = tf.int)
-        reward = tf.convert_to_tensor(reward,dtype = tf.int)
+        action = tf.convert_to_tensor(action,dtype = tf.int32)
+        reward = tf.convert_to_tensor(reward,dtype = tf.float32)
 
         if len(state.shape) == 1:
-            pass
+            state = tf.expand_dims(state,axis = 0)
+            next_state = tf.expand_dims(next_state,axis = 0)
+            action = tf.expand_dims(action,axis = 0)
+            reward = tf.expand_dims(reward,axis = 0)
+            game_over = tf.expand_dims(game_over,axis = 0)
             #ev. reshape.... for state,next_state,action,reward,game_over
+
 
         #implement Bellmann-equation
         #get predicted Q-Values with the current state
         pred = self.model.predict(state) #this is an action....
 
         #apply r+ y * max(next_predQ)
+        # target = tf.identity(pred)
         target = pred.copy()
         for idx in range(len(game_over)):
             Q_new = reward[idx]
             if not game_over[idx]:
 
-                Q_new = reward[idx] + self.gamma * tf.reducemax(self.model.predict(next_state))
+                Q_new = reward[idx] + self.gamma * tf.reduce_max(self.model.predict(next_state))
 
             target[idx][np.argmax(action)] = Q_new
 
@@ -78,9 +84,10 @@ class QTrainer:
 
         with tf.GradientTape() as gradTape:
 
-            loss = self.criterion(target,pred) #calculate the loss (mse)
+            loss = self.criterion(tf.convert_to_tensor(target),
+                                  self.model(state,training = True)) #calculate the loss (mse) #importatnt to use self.model(state)
 
-        gradients_of_disc2 = gradTape.gradient(loss, self.model.trainable_variables)
+        gradients_of_disc2 = gradTape.gradient(loss, self.model.trainable_weights)
 
         # parameters optimization for discriminator for fake labels
         self.optim.apply_gradients(zip(gradients_of_disc2,
@@ -89,8 +96,10 @@ class QTrainer:
 
 if __name__ == '__main__':
     #testing
-    mod = Linear_QNet(11,7,3)
+    mod = Linear_QNet(11,256,3)
 
+    mod.predict(np.random.random((1, 11)))
+    mod.summary()
     mod.save()
     mod.summary()
 

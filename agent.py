@@ -103,7 +103,7 @@ class Agent:
             final_move[move] = 1
         else:
             #is that really a tensor?
-            state0 = tf.Variable(state,dtype = tf.float32)
+            state0 = tf.expand_dims(tf.convert_to_tensor(state, dtype=tf.float32), axis=0)
             prediction = self.model.predict(state0)
 
             move = np.argmax(prediction)
@@ -122,7 +122,7 @@ def train():
 
     while True:
         #get old state
-        state_old = Agent.get_state(game)
+        state_old = agent.get_state(game=game)
 
         #get move
         final_move = agent.get_action(state_old)
