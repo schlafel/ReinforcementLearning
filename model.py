@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 # Hide GPU from visible devices
-tf.config.set_visible_devices([], 'GPU')
+# tf.config.set_visible_devices([], 'GPU')
 
 
 class Linear_QNet(tf.keras.Model):
@@ -49,7 +49,7 @@ class QTrainer:
         self.optim = tf.keras.optimizers.Adam(learning_rate = self.lr)
         self.criterion = tf.keras.losses.MeanSquaredError()
 
-    #@tf.function
+    @tf.function
     def train_step(self,state,action,reward,next_state,game_over):
         state = tf.convert_to_tensor(state,dtype = tf.float32)
         next_state = tf.convert_to_tensor(next_state,dtype = tf.float32)
