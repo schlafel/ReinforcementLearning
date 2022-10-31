@@ -3,6 +3,8 @@ import random
 import numpy as np
 from collections import deque
 from game import SnakeGameAI,Direction,Point
+import tensorflow as tf
+from model import Linear_QNet,QTrainer
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
@@ -12,10 +14,14 @@ class Agent:
     def __init__(self):
         self.n_games = 0
         self.epsilon = 0 #parameter for randomness
-        self.gamma = 0
+        self.gamma = 0.9
         self.memory = deque(maxlen=MAX_MEMORY) #automatically remove popleft()
 
         #model, trainer
+        self.model = Linear_QNet(11,256,3)
+        self.trainer = QTrainer(model = self.model,
+                                lr = LR,
+                                gamma = self.gamma)
 
 
 
@@ -65,24 +71,46 @@ class Agent:
             game.food.x > game.head.x, #Food to the right
             game.food.y < game.head.y,
             game.food.y > game.head.y
-
         ]
 
         return np.array(state,dtype = int)
 
-        pass
+
 
     def remember(self,state,action,reward,next_state,game_over):
-        pass
+        self.memory.append((state,action,reward,next_state,game_over)) #poplef if MAX_MEMORY is reached
 
     def train_long_memory(self):
-        pass
+        if len(self.memory) > BATCH_SIZE:
+            mini_sample = random.sample(self.memory,BATCH_SIZE) #get BATCH_SIZE --> list of tuples
+        else:
+            mini_sample = self.memory
+
+        states,actions,rewards,next_states,dones = zip(*mini_sample)
+        self.trainer.train_step(states, actions, rewards, next_states, dones)
+
 
     def train_short_memory(self,state,action,reward,next_state,game_over):
-        pass
+        self.trainer.train_step(state,action,reward,next_state,game_over)
 
     def get_action(self,state):
-        pass
+        #random moves: tradeoff between exploration / extploitation
+
+        self.epsilon = 80 - self.n_games
+        final_move = [0,0,0]
+        if random.randint(0,200) < self.epsilon:
+            move = random.randint(0,2)
+            final_move[move] = 1
+        else:
+            #is that really a tensor?
+            state0 = tf.Variable(state,dtype = tf.float32)
+            prediction = self.model.predict(state0)
+
+            move = np.argmax(prediction)
+            final_move[move] = 1
+        return final_move
+
+
 
 def train():
     plot_scores = []
@@ -121,7 +149,7 @@ def train():
                 #agent.model.save()
             print("Game",agent.n_games,"Score",score,"Record",record)
 
-    pass
+
 
 
 
