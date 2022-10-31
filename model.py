@@ -67,7 +67,7 @@ class QTrainer:
 
         #implement Bellmann-equation
         #get predicted Q-Values with the current state
-        pred = self.model.predict(state) #this is an action....
+        pred = self.model.predict(state,verbose = False) #this is an action....
 
         #apply r+ y * max(next_predQ)
         # target = tf.identity(pred)
@@ -76,7 +76,7 @@ class QTrainer:
             Q_new = reward[idx]
             if not game_over[idx]:
 
-                Q_new = reward[idx] + self.gamma * tf.reduce_max(self.model.predict(next_state))
+                Q_new = reward[idx] + self.gamma * tf.reduce_max(self.model.predict(next_state,verbose = False))
 
             target[idx][np.argmax(action)] = Q_new
 
@@ -85,7 +85,7 @@ class QTrainer:
         with tf.GradientTape() as gradTape:
 
             loss = self.criterion(tf.convert_to_tensor(target),
-                                  self.model(state,training = True)) #calculate the loss (mse) #importatnt to use self.model(state)
+                                  self.model(state,training = True,verbose = False)) #calculate the loss (mse) #importatnt to use self.model(state)
 
         gradients_of_disc2 = gradTape.gradient(loss, self.model.trainable_weights)
 
