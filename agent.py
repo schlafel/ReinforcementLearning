@@ -42,35 +42,35 @@ class Agent:
         dir_d = game.direction == Direction.DOWN
 
         state = [
-            #Danger straight
+            # Danger straight
             (dir_r and game.is_collision(point_r)) or
             (dir_l and game.is_collision(point_l)) or
             (dir_u and game.is_collision(point_u)) or
             (dir_d and game.is_collision(point_d)),
-            #Danger right
+
+            # Danger right
             (dir_u and game.is_collision(point_r)) or
             (dir_d and game.is_collision(point_l)) or
             (dir_l and game.is_collision(point_u)) or
             (dir_r and game.is_collision(point_d)),
-            #Danger left
+
+            # Danger left
             (dir_d and game.is_collision(point_r)) or
             (dir_u and game.is_collision(point_l)) or
             (dir_r and game.is_collision(point_u)) or
             (dir_l and game.is_collision(point_d)),
 
-
-            #Move direction
+            # Move direction
             dir_l,
             dir_r,
             dir_u,
             dir_d,
 
-
-            #Food location
-            game.food.x < game.head.x, #Food to the left
-            game.food.x > game.head.x, #Food to the right
-            game.food.y < game.head.y,
-            game.food.y > game.head.y
+            # Food location
+            game.food.x < game.head.x,  # food left
+            game.food.x > game.head.x,  # food right
+            game.food.y < game.head.y,  # food up
+            game.food.y > game.head.y  # food down
         ]
 
         return np.array(state,dtype = int)
@@ -86,8 +86,8 @@ class Agent:
         else:
             mini_sample = self.memory
 
-        states,actions,rewards,next_states,dones = zip(*mini_sample)
-        self.trainer.train_step(states, actions, rewards, next_states, dones)
+        states,actions,rewards,next_states,game_overs = zip(*mini_sample)
+        self.trainer.train_step(states, actions, rewards, next_states, game_overs)
 
 
     def train_short_memory(self,state,action,reward,next_state,game_over):
