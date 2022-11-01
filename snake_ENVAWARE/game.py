@@ -40,6 +40,11 @@ class SnakeGameAI:
         self.clock = pygame.time.Clock()
         self.reset()
 
+        self.n_rows = h // BLOCK_SIZE
+        self.n_cols = w // BLOCK_SIZE
+
+
+
 
 
 
@@ -57,6 +62,10 @@ class SnakeGameAI:
         self.food = None
         self._place_food()
         self.frame_iteration =  0
+
+
+
+
 
 
     def _place_food(self):
@@ -105,8 +114,9 @@ class SnakeGameAI:
 
         self._update_ui()
         self.clock.tick(snake_speed)
+        self.get_observation()
 
-        return reward, game_over, self.score
+        return reward, game_over, self.score,self.state
 
     def _move(self,action):
 
@@ -162,6 +172,29 @@ class SnakeGameAI:
         text = self.font.render("Score: " + str(self.score), True, white)
         self.display.blit(text, [0, 0])
         pygame.display.flip()
+
+    def set_borders(self):
+        # border
+        self.state[0, :,0] = 1
+        self.state[-1, :,0] = 1
+        self.state[ :, 0,0] = 1
+        self.state[:, -1,0] = 1
+
+
+    def get_observation(self):
+        #reset state
+        self.state = np.zeros((self.n_rows + 2, self.n_cols + 2,2))
+        self.set_borders()
+        #update the state (array)
+        #put snake in array (0th channel)
+        for pt in self.snake:
+            self.state[int(pt.y // self.n_rows + 1), int(pt.x // self.n_cols + 1), 1] = 1.0
+
+        #place Food
+        self.state[int(self.food.y // self.n_rows + 1), int(self.food.x // self.n_cols + 1), 0] = -1.0
+        return self.state
+
+
 
 
 

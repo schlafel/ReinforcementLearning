@@ -121,9 +121,16 @@ class SnakeGame:
 
     def _update_ui(self):
         self.display.fill(black)
+        pygame.draw.rect(self.display, red, pygame.Rect(self.snake[0].x, self.snake[0].y, self.BLOCK_SIZE, self.BLOCK_SIZE))
+        pygame.draw.rect(self.display, black,
+                         pygame.Rect(self.snake[0].x+5, self.snake[0].y+5, self.BLOCK_SIZE - 10, self.BLOCK_SIZE - 10))
 
-        for pt in self.snake:
-            pygame.draw.rect(self.display,green,pygame.Rect(pt.x,pt.y,self.BLOCK_SIZE,self.BLOCK_SIZE))
+        for pt in self.snake[1:]:
+            pygame.draw.rect(self.display,green,
+                             pygame.Rect(pt.x+2,pt.y+2,self.BLOCK_SIZE-4,self.BLOCK_SIZE-4))
+            pygame.draw.rect(self.display, black, pygame.Rect(pt.x + 5, pt.y + 5, self.BLOCK_SIZE - 10, self.BLOCK_SIZE - 10))
+            pygame.draw.circle(self.display,red,(pt.x + 5 ,
+                                                 pt.y + 5), 2,2)
         pygame.draw.rect(self.display,white,pygame.Rect(self.food.x,self.food.y,self.BLOCK_SIZE,self.BLOCK_SIZE))
 
         text = self.font.render("Score: " + str(self.score), True, white)
