@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib
 from collections import deque
 import random
-# import tensorflow as tf
+import tensorflow as tf
 matplotlib.use("TkAgg")
 
 MAX_MEMORY = 100_000

@@ -1,5 +1,5 @@
 import tensorflow as tf
-import nump as np
+import numpy as np
 
 class Model(tf.keras.Model):
     def __init__(self):

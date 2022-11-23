@@ -43,11 +43,6 @@ class SnakeGameAI:
         self.n_rows = h // BLOCK_SIZE
         self.n_cols = w // BLOCK_SIZE
 
-
-
-
-
-
     def reset(self):
         #initial direction
         self.direction = Direction.RIGHT
@@ -62,11 +57,6 @@ class SnakeGameAI:
         self.food = None
         self._place_food()
         self.frame_iteration =  0
-
-
-
-
-
 
     def _place_food(self):
         x = random.randint(0,(self.w-self.BLOCK_SIZE)//self.BLOCK_SIZE)*self.BLOCK_SIZE
