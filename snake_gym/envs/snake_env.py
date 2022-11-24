@@ -8,6 +8,11 @@ import random
 from collections import namedtuple
 
 
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")
+
+
 class Direction(Enum):
     RIGHT = 0
     DOWN = 1
@@ -78,8 +83,8 @@ class SnakeEnv(gym.Env):
         self.action_space = gym.spaces.Discrete(len(self.action_map.keys()))
 
         self.observation_space = gym.spaces.Box(
-            low=0, high=255, shape=(self.n_rows, self.n_cols, 1),
-            dtype=np.uint8)
+            low=-100, high=self.n_rows*self.n_cols, shape=(self.n_rows, self.n_cols, 1),
+            dtype=np.int)
 
 
         self.window = None
@@ -109,21 +114,28 @@ class SnakeEnv(gym.Env):
     def get_observation(self):
         # reset state
         self.state = np.zeros((self.n_rows, self.n_cols, 1),
-                              dtype=np.uint8)
+                              dtype=np.int)
         # self.set_borders()
         # update the state (array)
         # put snake in array (0th channel)
-        for _i,pt in enumerate(self.snake):
-            if _i == 0:
-                val = 5
-            else:
-                val = 0
-            self.state[int(pt.y // self.n_rows + 1), int(pt.x // self.n_cols + 1), 0] = val
+        for _i,pt in enumerate(reversed(self.snake)):
+
+            self.state[int(pt.y // self.n_rows + 1), int(pt.x // self.n_cols + 1), 0] = _i+1
 
         # place Food
-        self.state[int(self.food.y // self.n_rows + 1), int(self.food.x // self.n_cols + 1), 0] = -1.0
+        self.state[int(self.food.y // self.n_rows + 1), int(self.food.x // self.n_cols + 1), 0] = -100
         return self.state
 
+    def plot_state(self,show = True):
+        masked_array = np.ma.masked_where(self.state[:, :, 0] == 0, self.state[:, :, 0])
+
+        cmap = matplotlib.cm.jet  # Can be any colormap that you want after the cm
+        cmap.set_bad(color='white')
+        fig, ax = plt.subplots(1)
+        ax.matshow(masked_array, cmap=cmap)
+        if show:
+            plt.show()
+            
     def step(self, action:int):
         # perform one step in the game logic
         # self.frame_iteration += 1
@@ -137,10 +149,10 @@ class SnakeEnv(gym.Env):
             action = self.direction.value
 
 
-        print(action)
-        assert self.action_space.contains(
-            action
-        ), f"{action!r} ({type(action)}) invalid"
+        # print(action)
+        assert self.action_space.contains(action), f"{action!r} ({type(action)}) invalid"
+
+
             # if event.type == pygame.KEYDOWN:
             #     if event.key == pygame.K_LEFT:
             #         self.direction = Direction.LEFT
