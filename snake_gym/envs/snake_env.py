@@ -90,6 +90,8 @@ class SnakeEnv(gym.Env):
         self.window = None
         self.clock = None
         self.high_score = 0
+        
+        self.reset()
 
 
 
