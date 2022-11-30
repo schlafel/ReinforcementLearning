@@ -34,9 +34,9 @@ blue = pygame.Color(0, 0, 255)
 font = pygame.font.SysFont('arial', 25)
 
 
-class SnakeEnv(gym.Env):
+class SnakeEnvDir(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"],
-                "render_fps": 4,
+                "render_fps": 40,
                 }
     def __init__(self, action_map=None,
                  env_config=None,
@@ -46,17 +46,21 @@ class SnakeEnv(gym.Env):
         # super(SnakeEnv, self).__init__()
 
         if env_config is None:
-            env_config = dict({"BLOCK_SIZE": 20,
-                               "w": 640,
-                               "h": 480})
+            env_config = dict({"gs": (20, 20),
+                               "BLOCK_SIZE":20})
 
 
         self.BLOCK_SIZE = env_config["BLOCK_SIZE"]
-        self.w = env_config["w"]
-        self.h = env_config["h"]
+        self.n_rows = env_config["gs"][0]
+        self.n_cols = env_config["gs"][1]
 
-        self.n_rows = self.h // self.BLOCK_SIZE
-        self.n_cols = self.w // self.BLOCK_SIZE
+
+        self.w = self.n_rows * self.BLOCK_SIZE
+        self.h = self.n_cols * self.BLOCK_SIZE
+
+
+
+
 
 
         self.render_mode = render_mode
@@ -70,11 +74,10 @@ class SnakeEnv(gym.Env):
 
 
         self.action_map = {
-            0: 'right',
-            1: 'down',
+            0: 'straight',
+            1: 'right',
             2: 'left',
-            3: 'up',
-            4:'None'
+
         }
 
         if action_map is not None:
@@ -100,7 +103,7 @@ class SnakeEnv(gym.Env):
         # reset the environment to initial state
         # initial direction
         self.direction = Direction.RIGHT
-        self.last_dir = Direction.RIGHT
+
 
         self.head = Point(self.w / 2, self.h / 2)
         self.snake = [self.head,
@@ -113,24 +116,47 @@ class SnakeEnv(gym.Env):
         self.frame_iteration = 0
         return self.get_observation()
 
+    def calc_distance_food(self):
+        distance_to_fruit = np.sqrt((self.food.x - self.snake[0].x) ** 2 +
+                                    (self.food.y - self.snake[0].y) ** 2)
+        self.food_distance = distance_to_fruit
+
     def get_observation(self):
         # reset state
-        self.state = np.ones((self.n_rows, self.n_cols, 1),
-                              dtype=np.float)*.5
-        # self.set_borders()
+        self.state = np.zeros((self.n_rows, self.n_cols, 1),
+                              dtype=float)
+        self.calc_distance_food()
+        self.set_borders()
         # update the state (array)
         # put snake in array (0th channel)
         for _i,pt in enumerate(reversed(self.snake)):
-            self.state[int(pt.y // self.n_rows), int(pt.x // self.n_cols), 0] = 0.0
-        #set Head to -20
-        self.state[int(pt.y // self.n_rows), int(pt.x // self.n_cols), 0] = 0
+            # self.state[int(pt.y // self.n_rows), int(pt.x // self.n_cols), 0] = .5
+            self.state[int(pt.y /self.BLOCK_SIZE),
+                       int(pt.x / self.BLOCK_SIZE), 0] = .5
+        #set Head to 0
+        self.state[int(pt.y / self.BLOCK_SIZE), int(pt.x / self.BLOCK_SIZE), 0] = .75
 
         # place Food
-        self.state[int(self.food.y // self.n_rows),
-                   int(self.food.x // self.n_cols), 0] = 1
+        self.state[int(self.food.y / self.BLOCK_SIZE),
+                   int(self.food.x / self.BLOCK_SIZE), 0] = -1
 
-        self.info = dict({"score":self.score})
+        self.info = dict({"score":self.score,
+                          "food_distance":self.food_distance})
         return self.state
+
+    def set_borders(self):
+
+        self.state[:,0,0] = 1
+        self.state[0,:,0] = 1
+        self.state[:,self.n_cols-1,0] = 1
+        self.state[self.n_rows-1,:,0] = 1
+        # for i in range(self.n_rows):
+        #     self.state[i, 0, 0] = 1.0
+        #     self.state[i, self.n_cols, 0] = 1.0
+        # for i in range(self.n_cols):
+        #     self.n_rows[0, i, 0] = 1.0
+        #     self.n_rows[self.n_rows + 1, i, 0] = 1.0
+
 
     def plot_state(self,show = True):
         masked_array = np.ma.masked_where(self.state[:, :, 0] == 0, self.state[:, :, 0])
@@ -138,7 +164,9 @@ class SnakeEnv(gym.Env):
         cmap = matplotlib.cm.jet  # Can be any colormap that you want after the cm
         cmap.set_bad(color='white')
         fig, ax = plt.subplots(1)
-        ax.matshow(masked_array, cmap=cmap)
+        ax.pcolormesh(np.flip(masked_array,axis = 0), cmap=cmap,edgecolor = "black")
+        ax.axis("equal")
+        ax.axis("off")
         if show:
             plt.show()
             
@@ -150,9 +178,7 @@ class SnakeEnv(gym.Env):
         #         pygame.quit()
         #         quit()
 
-        #what to do if noob:
-        if action == 4:
-            action = self.direction.value
+
 
 
         # print(action)
@@ -166,24 +192,26 @@ class SnakeEnv(gym.Env):
             #         self.direction = Direction.RIGHT
             #     elif event.key == pygame.K_UP:
             #         self.direction = Direction.UP
-            #     elif event.key == pygame.K_DOWN:
+            #     elif event.key == pygame.K_DOWN:s
             #         self.direction = Direction.DOWN
 
         self._move(action)
         self.snake.insert(0, self.head)
 
         game_over = False
-        reward = 0
-        if self.is_collision() or self.frame_iteration > 100 * len(self.snake):
+        reward = -self.food_distance/(self.w * np.sqrt(2))
+        if self.is_collision() or self.frame_iteration > (25 * len(self.snake)):
             game_over = True
-            reward = -10
-            #self.get_observation()
+            reward = -100
+            self.get_observation()
+
+            # self.plot_state()
 
             return self.state, reward, game_over, False, self.info
 
         # Move head
         if self.head == self.food:
-            reward = 10
+            reward = 100
             # add score
             self.score += 1
             if self.score > self.high_score:
@@ -247,6 +275,18 @@ class SnakeEnv(gym.Env):
 
         self.screen.fill(black)
 
+        #draw border
+        #lower border
+        pygame.draw.rect(self.screen, red,
+                         pygame.Rect(0, 0, self.w, self.BLOCK_SIZE))
+        pygame.draw.rect(self.screen, red,
+                         pygame.Rect(0, 0, self.BLOCK_SIZE, self.h))
+        pygame.draw.rect(self.screen, red,
+                         pygame.Rect(self.w-self.BLOCK_SIZE, 0, self.BLOCK_SIZE, self.h))
+        pygame.draw.rect(self.screen, red,
+                         pygame.Rect(0, self.h-self.BLOCK_SIZE,self.w , self.BLOCK_SIZE))
+
+        #draw snake
         pygame.draw.rect(self.screen, red,
                          pygame.Rect(self.snake[0].x, self.snake[0].y, self.BLOCK_SIZE, self.BLOCK_SIZE))
         pygame.draw.rect(self.screen, black,
@@ -284,15 +324,16 @@ class SnakeEnv(gym.Env):
     def is_collision(self, pt=None):
         if pt is None:
             pt = self.head
-        if pt.x > (self.w - self.BLOCK_SIZE) or pt.x < 0 or pt.y > (self.h - self.BLOCK_SIZE) or pt.y < 0:
+        # if pt.x > (self.w - self.BLOCK_SIZE) or pt.x < 0 or pt.y > (self.h - self.BLOCK_SIZE) or pt.y < 0:
+        if pt.x > (self.w - 2*self.BLOCK_SIZE) or pt.x < self.BLOCK_SIZE or pt.y > (self.h - 2*self.BLOCK_SIZE) or pt.y < self.BLOCK_SIZE:
             return True
         if pt in self.snake[1:]:
             return True
         return False
 
     def _place_food(self):
-        x = random.randint(0, (self.w - self.BLOCK_SIZE) // self.BLOCK_SIZE) * self.BLOCK_SIZE
-        y = random.randint(0, (self.h - self.BLOCK_SIZE) // self.BLOCK_SIZE) * self.BLOCK_SIZE
+        x = random.randint(1, (self.w - 2*self.BLOCK_SIZE) // self.BLOCK_SIZE) * self.BLOCK_SIZE
+        y = random.randint(1, (self.h - 2*self.BLOCK_SIZE) // self.BLOCK_SIZE) * self.BLOCK_SIZE
         self.food = Point(x, y)
         if self.food in self.snake:
             self._place_food()
@@ -304,7 +345,38 @@ class SnakeEnv(gym.Env):
                       Direction.LEFT,
                       Direction.UP]
 
-        idx = clock_wise.index(self.direction)
+        if self.direction == Direction.DOWN: # down
+            if action == 0:
+                new_dir = Direction.DOWN
+            elif action == 1:
+                new_dir = Direction.LEFT
+            else:
+                new_dir = Direction.RIGHT
+
+        if self.direction == Direction.UP: # up
+            if action == 0:
+                new_dir = Direction.UP
+            elif action == 1:
+                new_dir = Direction.RIGHT
+            else:
+                new_dir = Direction.LEFT
+
+        if self.direction == Direction.LEFT:
+            if action == 0:
+                new_dir = Direction.LEFT
+            elif action == 1:
+                new_dir = Direction.UP
+            else:
+                new_dir = Direction.DOWN
+
+        if self.direction == Direction.RIGHT:
+            if action == 0:
+                new_dir = Direction.RIGHT
+            elif action == 1:
+                new_dir = Direction.DOWN
+            else:
+                new_dir = Direction.UP
+
 
         # if np.array_equal(action, [1, 0, 0]):
         #     # keep direction
@@ -318,7 +390,7 @@ class SnakeEnv(gym.Env):
         #
         #
         #
-        new_dir = clock_wise[action]
+        # new_dir = clock_wise[action]
         self.direction = new_dir
 
         x = self.head.x

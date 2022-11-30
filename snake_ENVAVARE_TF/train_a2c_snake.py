@@ -5,7 +5,8 @@ import tensorflow as tf
 import gym
 import snake_gym
 import numpy as np
-
+import tqdm
+from tensorflow.keras.utils import Progbar
 
 class A2C_Learner:
 
@@ -22,10 +23,13 @@ class A2C_Learner:
     def print_model_summary(self):
         print(self.agent.model.summary())
 
+    def _a(self):
+        pass
 
 
     def run(self,run_name = "test1",
-            show_training = True):
+            show_training = True,
+            batch_size = 128):
         if not os.path.exists(run_name):
             os.makedirs(run_name)
         # train model
@@ -37,13 +41,17 @@ class A2C_Learner:
         steps = 0
         num_eps = 0
         steps_since_last_test = 0
+        self.epoch = 1
         while True:
+            print(" ")
+            print(30*"*")
+            print("Epoch", self.epoch)
             state, num_steps, num_eps = self.run_train_step(
                 state=state,
                 rew=rew,
                 env=self.env,
                 num_actions=4,
-                batch_size=500,
+                batch_size=batch_size,
                 num_steps=steps,
                 num_eps=num_eps,
                 show_training=show_training,
@@ -58,6 +66,8 @@ class A2C_Learner:
                 self.model.policy_head.save(f'{folder}/{steps}_policy.h5')
                 self.model.value_head.save(f'{folder}/{steps}_value.h5')
 
+            self.epoch+=1
+
     def run_train_step(self,state,
                        rew, env,num_actions = 4,
                        batch_size = 500,
@@ -66,22 +76,25 @@ class A2C_Learner:
                        show_training = True):
 
         sarsdv= []
-        for i in range(batch_size):
+        for i in tqdm.tqdm(range(batch_size)):
             num_steps += num_steps
 
             action_logits, action_probs, value = self.agent.model(state[None,:])
 
 
-            action = [np.random.choice(range(num_actions), p=ap.numpy()) for ap in action_probs]
+            action = np.random.choice(range(num_actions), p=action_probs.numpy().flatten())
             next_s, reward, done, info_dict = env.step(action)
             if show_training:
                 env.render()
+            if self.epoch%500 == 0:
+                env.render()
+                #env.plot_state()
             next_s = np.stack(next_s)
-            reward = np.expand_dims(np.stack(reward), -1)
-            done = np.expand_dims(np.stack(done), -1)
+            reward = np.expand_dims(np.stack([reward]),-1)
+            done = np.expand_dims(np.stack([done]), -1)
 
             rew += reward
-            sarsdv.append((state, action, reward, None, done, value))
+            sarsdv.append(([state], [action], reward, None, done, value))
 
             state = next_s.copy()
 
@@ -91,7 +104,7 @@ class A2C_Learner:
                 rew = 0
 
 
-        _, _, R = self.agent.model(state)
+        _, _, R = self.agent.model(state[None,:])
 
         discounted_rewards = []
         for _, _, r, _, d, _ in reversed(sarsdv):
@@ -102,17 +115,17 @@ class A2C_Learner:
 
         discounted_rewards = np.concatenate(np.array(list(reversed(discounted_rewards))))
 
-        states = _a(sarsdv, 0)
-        values = _a(sarsdv, -1)
-        actions = _a(sarsdv, 1)
+        states = self._a(sarsdv, 0)
+        values = self._a(sarsdv, -1)
+        actions = self._a(sarsdv, 1)
 
 
-        loss = self.agent.train(self.agent.model,
-                                states.astype('float32'),
+        loss,pol_loss,val_loss = self.agent.train(states.astype('float32'),
                                 discounted_rewards.astype('float32'),
                                 values.astype('float32'),
-                     actions.astype('int32'))
-
+                                actions.astype('int32'))
+        print(loss.numpy())
+        print("High Score:", env.high_score)
         return state, num_steps, num_eps
 
     @staticmethod
@@ -123,8 +136,13 @@ class A2C_Learner:
 
 if __name__ == '__main__':
 
-    env = gym.make("Snake-v0")
+    env = gym.make("Snake-v0",env_config = {"w":400,
+                                             "h":400,
+                                            "BLOCK_SIZE":20},
+                   )
     aL = A2C_Learner(env = env)
     #aL.print_model_summary()
 
-    aL.run(run_name="test")
+    aL.run(run_name="test",
+           batch_size=128*16,
+           show_training=False)

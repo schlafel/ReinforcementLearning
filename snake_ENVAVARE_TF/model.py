@@ -110,7 +110,7 @@ class A2CAgent:
     def train(self, states, rewards, values, actions):
         advs = rewards - values
         with tf.GradientTape() as tape:
-            logits,vals = self.model.predict(states)
+            logits,_,vals = self.model(states)
             neglogpac = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=tf.one_hot(actions, 4))
             _policy_loss = neglogpac*tf.squeeze(advs)
             policy_loss = tf.reduce_mean(_policy_loss)
@@ -118,9 +118,9 @@ class A2CAgent:
             #vpred = self.model.vcall(states)
             value_loss = tf.reduce_mean(tf.square(vals-rewards))
 
-            entropy = tf.reduce_mean(self.calc_entropy((logits,vals)))
+            entropy = tf.reduce_mean(self.calc_entropy((logits)))
 
-            loss = policy_loss + value_loss * 0.5  - 0.1*entropy
+            loss = policy_loss + value_loss * 0.5 - 0.1 * entropy
 
         var_list = tape.watched_variables()
         grads = tape.gradient(loss, var_list)
