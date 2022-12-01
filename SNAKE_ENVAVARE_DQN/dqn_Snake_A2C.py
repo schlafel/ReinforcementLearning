@@ -8,6 +8,8 @@ from gym import wrappers
 import snake_gymDirected
 import matplotlib.pyplot as plt
 import tqdm
+import tensorflow_probability as tfp
+import pandas as pd
 
 #https://towardsdatascience.com/deep-reinforcement-learning-build-a-deep-q-network-dqn-to-play-cartpole-with-tensorflow-2-and-gym-8e105744b998
 
@@ -28,7 +30,11 @@ class MyModel(tf.keras.Model):
             self.hidden_layers.append(tf.keras.layers.Dense(
                 i,  kernel_initializer='RandomNormal'))
 
-        self.output_layer = tf.keras.layers.Dense(
+
+
+        self.output_layer_value = tf.keras.layers.Dense(
+            1, kernel_initializer='RandomNormal')
+        self.output_layer_action = tf.keras.layers.Dense(
             num_actions, activation='softmax', kernel_initializer='RandomNormal')
 
     # @tf.function
@@ -39,8 +45,13 @@ class MyModel(tf.keras.Model):
         z = self.flatten(z)
         for layer in self.hidden_layers:
             z = layer(z)
-        output = self.output_layer(z)
-        return output
+
+        output_policy = self.output_layer_action(z)
+
+
+        output_value = self.output_layer_value(z)
+
+        return output_policy, output_value
 
 
 
@@ -58,26 +69,40 @@ class DQN:
     def predict(self, inputs):
         return self.model(inputs)
 
+    def actor_loss(self, prob, action, td):
+        dist = tfp.distributions.Categorical(probs=prob, dtype=tf.float32)
+        log_prob = dist.log_prob(action)
+        loss = -log_prob*td
+        return loss
+
     def train(self, TargetNet):
+        #https://towardsdatascience.com/actor-critic-with-tensorflow-2-x-part-1-of-2-d1e26a54ce97
         if len(self.experience['s']) < self.min_experiences:
-            return 0
+            return 0,0
         ids = np.random.randint(low=0, high=len(self.experience['s']), size=self.batch_size)
         states = np.asarray([self.experience['s'][i][:,:] for i in ids])
         actions = np.asarray([self.experience['a'][i] for i in ids])
         rewards = np.asarray([self.experience['r'][i] for i in ids])
         states_next = np.asarray([self.experience['s2'][i][:,:] for i in ids])
         dones = np.asarray([self.experience['done'][i] for i in ids])
-        _, value_next = TargetNet.predict(states_next)
-        actual_values = np.where(dones, rewards, rewards+self.gamma*value_next)
 
-        with tf.GradientTape() as tape:
-            selected_action_values = tf.math.reduce_sum(
-                self.predict(states) * tf.one_hot(actions, self.num_actions), axis=1)
-            loss = tf.math.reduce_mean(tf.square(actual_values - selected_action_values))
-        variables = self.model.trainable_variables
-        gradients = tape.gradient(loss, variables)
-        self.optimizer.apply_gradients(zip(gradients, variables))
-        return loss
+        # state = np.array([state])
+        # next_state = np.array([next_state])
+        with tf.GradientTape() as tape1, tf.GradientTape() as tape2:
+            # p = self.actor(states, training=True)
+            # v =  self.critic(states,training=True)
+            p,v = TargetNet.model(states, training=True)
+
+            pn,vn = TargetNet.model(states_next, training=True)
+            # vn = self.critic(next_state, training=True)
+            td = rewards + self.gamma*vn*(1-(1*dones)) - v
+            a_loss = self.actor_loss(p, actions, td)
+            c_loss = td**2
+        grads1 = tape1.gradient(a_loss, TargetNet.model.trainable_variables)
+        grads2 = tape2.gradient(c_loss, TargetNet.model.trainable_variables)
+        TargetNet.optimizer.apply_gradients(zip(grads1, TargetNet.model.trainable_variables))
+        TargetNet.optimizer.apply_gradients(zip(grads2, TargetNet.model.trainable_variables))
+        return a_loss, c_loss
 
     def get_action(self, states, epsilon):
         if np.random.random() < epsilon:
@@ -132,11 +157,11 @@ def play_game(env, TrainNet, TargetNet, epsilon, copy_step,n,show_ep = True,show
                'done': done}
 
         TrainNet.add_experience(exp)
-        loss = TrainNet.train(TargetNet)
-        if isinstance(loss, int):
-            losses.append(loss)
+        a_loss,c_loss = TrainNet.train(TargetNet)
+        if isinstance(a_loss, int):
+            losses.append(a_loss)
         else:
-            losses.append(loss.numpy())
+            losses.append(tf.reduce_mean(a_loss).numpy())
         iteration += 1
         if iteration % copy_step == 0:
             TargetNet.copy_weights(TrainNet)
@@ -173,8 +198,12 @@ def main(env,env_name = "snake"):
     summary_writer = tf.summary.create_file_writer(log_dir)
     TrainNet = DQN(num_states, num_actions, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
     TrainNet.model(env.reset()[None, :, :, :])
+    TrainNet.model.compile()
     TrainNet.model.summary()
     TargetNet = DQN(num_states, num_actions, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
+    TargetNet.model(env.reset()[None, :, :, :])
+    TargetNet.model.compile()
+    TargetNet.model.summary()
     N = 1000
     total_rewards = np.empty(N)
     total_iter = np.zeros(N)

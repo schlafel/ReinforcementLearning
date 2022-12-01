@@ -121,6 +121,7 @@ class SnakeEnvDir(gym.Env):
                                     (self.food.y - self.snake[0].y) ** 2)
         self.food_distance = distance_to_fruit
 
+
     def get_observation(self):
         # reset state
         self.state = np.zeros((self.n_rows, self.n_cols, 1),
@@ -167,6 +168,7 @@ class SnakeEnvDir(gym.Env):
         ax.pcolormesh(np.flip(masked_array,axis = 0), cmap=cmap,edgecolor = "black")
         ax.axis("equal")
         ax.axis("off")
+        ax.text(0,-1,"Reward: {:.1f}".format(self.reward))
         if show:
             plt.show()
             
@@ -194,16 +196,23 @@ class SnakeEnvDir(gym.Env):
             #         self.direction = Direction.UP
             #     elif event.key == pygame.K_DOWN:s
             #         self.direction = Direction.DOWN
-
+        food_distance_old = self.food_distance.copy()
         self._move(action)
+
+
         self.snake.insert(0, self.head)
+        self.get_observation()
 
         game_over = False
-        reward = -self.food_distance/(self.w * np.sqrt(2))
+        # reward = -self.food_distance/(self.w * np.sqrt(2))
+        reward = 0
+        reward = 0.1 if self.food_distance < food_distance_old else -.1
+        self.reward = reward
         if self.is_collision() or self.frame_iteration > (25 * len(self.snake)):
             game_over = True
             reward = -100
             self.get_observation()
+            self.reward = reward
 
             # self.plot_state()
 
@@ -212,6 +221,7 @@ class SnakeEnvDir(gym.Env):
         # Move head
         if self.head == self.food:
             reward = 100
+            self.reward = reward
             # add score
             self.score += 1
             if self.score > self.high_score:
@@ -226,7 +236,8 @@ class SnakeEnvDir(gym.Env):
 
         self.info = dict({"score":self.score})
         self.renderer.render_step()
-
+        self.reward = reward
+        # self.plot_state()
         return self.state, reward, game_over, False, self.info,
         # return observation, reward, done, info
 
