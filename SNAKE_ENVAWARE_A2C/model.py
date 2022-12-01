@@ -8,24 +8,25 @@ import tensorflow_probability as tfp
 class Actor(tf.keras.Model):
     def __init__(self,number_actions = 3,input_shape = None):
         super().__init__()
-        self.conv0 = tf.keras.layers.Conv2D(64, (3, 3),
-                                            padding='same',
-                                            activation='relu',
-                                            input_shape = input_shape)
-
-        self.conv1 = tf.keras.layers.Conv2D(2, (1, 1),
-                                            padding='same',
-                                            activation='relu')
+        # self.conv0 = tf.keras.layers.Conv2D(64, (3, 3),
+        #                                     padding='same',
+        #                                     activation='relu',
+        #                                     input_shape = input_shape)
+        #
+        # self.conv1 = tf.keras.layers.Conv2D(2, (1, 1),
+        #                                     padding='same',
+        #                                     activation='relu')
         self.flatten = tf.keras.layers.Flatten()
 
-        #self.d1 = tf.keras.layers.Dense(2048, activation='relu')
+        self.d1 = tf.keras.layers.Dense(64, activation='relu')
         #self.d2 = tf.keras.layers.Dense(1536, activation='relu')
         self.a = tf.keras.layers.Dense(number_actions, activation='softmax')
 
     def call(self, input_data):
-        x = self.conv0(input_data)
-        x = self.conv1(x)
-        x = self.flatten(x)
+        # x = self.conv0(input_data)
+        # x = self.conv1(x)
+        x = self.flatten(input_data)
+        x = self.d1(x)
         a = self.a(x)
         return a
 
@@ -33,23 +34,24 @@ class Critic(tf.keras.Model):
     def __init__(self,input_shape = None):
         super().__init__(self)
 
-        self.conv0 = tf.keras.layers.Conv2D(64, (3, 3),
-                                            padding='same',
-                                            activation='relu',input_shape = input_shape)
-
-        self.conv1 = tf.keras.layers.Conv2D(1, (1, 1),
-                                            padding='same',
-                                            activation='relu')
+        # self.conv0 = tf.keras.layers.Conv2D(64, (3, 3),
+        #                                     padding='same',
+        #                                     activation='relu',input_shape = input_shape)
+        #
+        # self.conv1 = tf.keras.layers.Conv2D(1, (1, 1),
+        #                                     padding='same',
+        #                                     activation='relu')
         self.flatten = tf.keras.layers.Flatten()
 
-        #self.d1 = tf.keras.layers.Dense(2048, activation='relu')
+        self.d1 = tf.keras.layers.Dense(64, activation='relu')
         #self.d2 = tf.keras.layers.Dense(1536, activation='relu')
         self.v = tf.keras.layers.Dense(1, activation=None)
 
     def call(self, input_data):
-        x = self.conv0(input_data)
-        x = self.conv1(x)
-        x = self.flatten(x)
+        # x = self.conv0(input_data)
+        # x = self.conv1(x)
+        x = self.flatten(input_data)
+        x = self.d1(x)
         v = self.v(x)
         return v
 
@@ -84,13 +86,13 @@ class A2CAgent():
 
 
     def learn(self, state, action, reward, next_state, done):
-        state = np.array([state])
-        next_state = np.array([next_state])
+        # state = np.array([state])
+        # next_state = np.array([next_state])
         with tf.GradientTape() as tape1, tf.GradientTape() as tape2:
             p = self.actor(state, training=True)
             v =  self.critic(state,training=True)
             vn = self.critic(next_state, training=True)
-            td = reward + self.gamma*vn*(1-int(done)) - v
+            td = reward + self.gamma*vn*(1-(done)) - v
             a_loss = self.actor_loss(p, action, td)
             c_loss = td**2
         grads1 = tape1.gradient(a_loss, self.actor.trainable_variables)

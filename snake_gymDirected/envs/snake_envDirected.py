@@ -36,7 +36,7 @@ font = pygame.font.SysFont('arial', 25)
 
 class SnakeEnvDir(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"],
-                "render_fps": 40,
+                "render_fps": 20,
                 }
     def __init__(self, action_map=None,
                  env_config=None,
@@ -108,12 +108,15 @@ class SnakeEnvDir(gym.Env):
         self.head = Point(self.w / 2, self.h / 2)
         self.snake = [self.head,
                       Point(self.head.x - self.BLOCK_SIZE, self.head.y),
-                      Point(self.head.x - (2 * self.BLOCK_SIZE), self.head.y), ]
+                      Point(self.head.x - (2 * self.BLOCK_SIZE), self.head.y),
+                      Point(self.head.x - (3 * self.BLOCK_SIZE), self.head.y),
+                      ]
 
         self.score = 0
         self.food = None
         self._place_food()
         self.frame_iteration = 0
+        self.step_without_scoring = 0
         return self.get_observation()
 
     def calc_distance_food(self):
@@ -124,7 +127,7 @@ class SnakeEnvDir(gym.Env):
 
     def get_observation(self):
         # reset state
-        self.state = np.zeros((self.n_rows, self.n_cols, 1),
+        self.state = np.zeros((self.n_rows, self.n_cols, 2),
                               dtype=float)
         self.calc_distance_food()
         self.set_borders()
@@ -133,9 +136,9 @@ class SnakeEnvDir(gym.Env):
         for _i,pt in enumerate(reversed(self.snake)):
             # self.state[int(pt.y // self.n_rows), int(pt.x // self.n_cols), 0] = .5
             self.state[int(pt.y /self.BLOCK_SIZE),
-                       int(pt.x / self.BLOCK_SIZE), 0] = .5
+                       int(pt.x / self.BLOCK_SIZE), 0] = 1
         #set Head to 0
-        self.state[int(pt.y / self.BLOCK_SIZE), int(pt.x / self.BLOCK_SIZE), 0] = .75
+        self.state[int(pt.y / self.BLOCK_SIZE), int(pt.x / self.BLOCK_SIZE), 1] = 1
 
         # place Food
         self.state[int(self.food.y / self.BLOCK_SIZE),
@@ -160,7 +163,9 @@ class SnakeEnvDir(gym.Env):
 
 
     def plot_state(self,show = True):
-        masked_array = np.ma.masked_where(self.state[:, :, 0] == 0, self.state[:, :, 0])
+
+        plot_state = self.state[:, :, 0] + self.state[:, :, 1]*-1
+        masked_array = np.ma.masked_where(plot_state == 0, plot_state)
 
         cmap = matplotlib.cm.jet  # Can be any colormap that you want after the cm
         cmap.set_bad(color='white')
@@ -174,61 +179,50 @@ class SnakeEnvDir(gym.Env):
             
     def step(self, action:int):
         # perform one step in the game logic
-        # self.frame_iteration += 1
-        # for event in pygame.event.get():
-        #     if event.type == pygame.QUIT:
-        #         pygame.quit()
-        #         quit()
-
-
-
-
+        self.frame_iteration += 1
         # print(action)
         assert self.action_space.contains(action), f"{action!r} ({type(action)}) invalid"
 
-
-            # if event.type == pygame.KEYDOWN:
-            #     if event.key == pygame.K_LEFT:
-            #         self.direction = Direction.LEFT
-            #     elif event.key == pygame.K_RIGHT:
-            #         self.direction = Direction.RIGHT
-            #     elif event.key == pygame.K_UP:
-            #         self.direction = Direction.UP
-            #     elif event.key == pygame.K_DOWN:s
-            #         self.direction = Direction.DOWN
+        score_before = self.score
         food_distance_old = self.food_distance.copy()
         self._move(action)
+        score_after = self.score - score_before
 
-
+        #upadte snake pos.
         self.snake.insert(0, self.head)
         self.get_observation()
 
         game_over = False
         # reward = -self.food_distance/(self.w * np.sqrt(2))
-        reward = 0
-        reward = 0.1 if self.food_distance < food_distance_old else -.1
+
+        reward = score_after
         self.reward = reward
-        if self.is_collision() or self.frame_iteration > (25 * len(self.snake)):
+
+        if self.is_collision() or self.step_without_scoring > (25 * len(self.snake)):
             game_over = True
             reward = -100
             self.get_observation()
             self.reward = reward
-
             # self.plot_state()
 
             return self.state, reward, game_over, False, self.info
 
         # Move head
         if self.head == self.food:
-            reward = 100
+            reward = 100 * len(self.snake)
             self.reward = reward
             # add score
             self.score += 1
             if self.score > self.high_score:
                 self.high_score = self.score
             self._place_food()
+            self.snake_health = 0
+            #remove last item of snake
+            # self.snake.pop()
         else:
             self.snake.pop()
+            self.step_without_scoring += 1
+
 
         # self._update_ui()
         # self.clock.tick(snake_speed)
