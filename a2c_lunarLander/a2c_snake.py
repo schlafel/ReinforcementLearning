@@ -5,17 +5,32 @@ import tensorflow_probability as tfp
 import tensorflow.keras.losses as kls
 import datetime
 import matplotlib.pyplot as plt
-
+import snake_gymDirected
+import snake_gym
+import os
+import tqdm
 
 class Critic(tf.keras.Model):
     def __init__(self):
         super().__init__()
+        self.conv0 = tf.keras.layers.Conv2D(64, (3, 3),
+                                            padding='same',
+                                            activation='relu',)
+
+        self.conv1 = tf.keras.layers.Conv2D(1, (1, 1),
+                                            padding='same',
+                                            activation='relu')
+        self.flatten = tf.keras.layers.Flatten()
+
         self.d1 = tf.keras.layers.Dense(128, activation='relu')
         # self.d2 = tf.keras.layers.Dense(32,activation='relu')
         self.v = tf.keras.layers.Dense(1, activation=None)
 
     def call(self, input_data):
-        x = self.d1(input_data)
+        # x = self.conv0(input_data)
+        # x = self.conv1(x)
+        x = self.flatten(input_data)
+        x = self.d1(x)
         # x = self.d2(x)
         v = self.v(x)
         return v
@@ -24,12 +39,23 @@ class Critic(tf.keras.Model):
 class Actor(tf.keras.Model):
     def __init__(self,n_actions = 4):
         super().__init__()
+        self.conv0 = tf.keras.layers.Conv2D(64, (3, 3),
+                                            padding='same',
+                                            activation='relu',)
+
+        self.conv1 = tf.keras.layers.Conv2D(1, (1, 1),
+                                            padding='same',
+                                            activation='relu')
+        self.flatten = tf.keras.layers.Flatten()
         self.d1 = tf.keras.layers.Dense(128, activation='relu')
         # self.d2 = tf.keras.layers.Dense(32,activation='relu')
         self.a = tf.keras.layers.Dense(n_actions, activation='softmax')
 
     def call(self, input_data):
-        x = self.d1(input_data)
+        # x = self.conv0(input_data)
+        # x = self.conv1(x)
+        x = self.flatten(input_data)
+        x = self.d1(x)
         # x = self.d2(x)
         a = self.a(x)
         return a
@@ -37,18 +63,22 @@ class Actor(tf.keras.Model):
 
 class Agent():
     def __init__(self, gamma=0.99,n_actions = 4):
+
         self.gamma = gamma
         self.a_opt = tf.keras.optimizers.RMSprop(learning_rate=7e-3)
         self.c_opt = tf.keras.optimizers.RMSprop(learning_rate=7e-3)
         self.actor = Actor(n_actions=n_actions)
         self.critic = Critic()
 
+
+
     def act(self, state):
-        prob = self.actor(np.array([state]))
+        prob = self.actor(state[None,:,:,:])
         prob = prob.numpy()
         dist = tfp.distributions.Categorical(probs=prob, dtype=tf.float32)
         action = dist.sample()
         return int(action.numpy()[0])
+
 
     def actor_loss(self, probs, actions, td):
 
@@ -122,11 +152,31 @@ if __name__ == '__main__':
 
     tf.random.set_seed(336699)
     env_name = "LunarLander-v2"
+    env_name = "SnakeDir-v0"
+    # env_name = "Snake-v0"
+    render = False
 
     # env = gym.make("CartPole-v0")
-    env = gym.make(env_name)
-    agentoo7 = Agent(n_actions=env.action_space.n)
-    steps = 1000
+    env = gym.make(env_name, env_config={"gs": (8,8),
+                                                  "BLOCK_SIZE": 20},)
+    # env = gym.make(env_name,
+    #                # env_config={"gs": (12,12),
+    #                #                                "BLOCK_SIZE": 20},
+    #                )
+
+    agentoo7 = Agent(n_actions=env.action_space.n,
+                     )
+
+    state = env.reset()
+    agentoo7.actor(state[None,:,:,:])
+    agentoo7.critic(state[None,:,:,:])
+
+    agentoo7.actor.summary()
+    agentoo7.critic.summary()
+
+
+
+    steps = 10000
 
     low = env.observation_space.low
     high = env.observation_space.high
@@ -138,7 +188,7 @@ if __name__ == '__main__':
 
     ep_reward = []
     total_avgr = []
-    for s in range(steps):
+    for s in tqdm.tqdm(range(steps)):
 
         done = False
         state = env.reset()
@@ -153,7 +203,8 @@ if __name__ == '__main__':
 
             action = agentoo7.act(state)
             next_state, reward, done, _ = env.step(action)
-            env.render()
+            if render:
+                env.render()
             rewards.append(reward)
             states.append(state)
             # actions.append(tf.one_hot(action, 2, dtype=tf.int32).numpy().tolist())
@@ -165,22 +216,27 @@ if __name__ == '__main__':
                 ep_reward.append(total_reward)
                 avg_reward = np.mean(ep_reward[-100:])
                 total_avgr.append(avg_reward)
-                print("total reward after {} steps is {} and avg reward is {}".format(s, total_reward, avg_reward))
+
                 states, actions, discnt_rewards = preprocess1(states, actions, rewards, 1)
-
                 al, cl = agentoo7.learn(states, actions, discnt_rewards)
-                print(f"al{al}")
-                print(f"cl{cl}")
+                if s % 100 == 0:
+                    print(" ")
+                    print("total reward after {} steps is {} and avg reward is {}".format(s, total_reward, avg_reward))
 
-                with summary_writer.as_default():
-                    tf.summary.scalar('episode reward', total_reward, step=s)
-                    tf.summary.scalar('running avg reward(100)', avg_reward, step=s)
-                    tf.summary.scalar('actor loss', al, step=s)
-                    tf.summary.scalar('critics loss', cl, step=s)
-                    tf.summary.scalar('Score', total_reward, step=s)
+                    print(f"al{al}")
+                    print(f"cl{cl}")
 
+                    with summary_writer.as_default():
+                        tf.summary.scalar('episode reward', total_reward, step=s)
+                        tf.summary.scalar('running avg reward(100)', avg_reward, step=s)
+                        tf.summary.scalar('actor loss', al, step=s)
+                        tf.summary.scalar('critics loss', cl, step=s)
+                        tf.summary.scalar('Score', total_reward, step=s)
 
-    ep = [i for i in range(250)]
+        if s%1000 == 0:
+            agentoo7.actor.save_weights(os.path.join(log_dir,env_name +"_Actor_" +str(s)))
+            agentoo7.critic.save_weights(os.path.join(log_dir,env_name +"_Critic_" +str(s)))
+    ep = [i for i in range(steps)]
     plt.plot(ep, total_avgr, 'b')
     plt.title("avg reward Vs episods")
     plt.xlabel("episods")

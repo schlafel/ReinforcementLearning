@@ -47,9 +47,10 @@ class SnakeEnvDir(gym.Env):
 
         if env_config is None:
             env_config = dict({"gs": (20, 20),
-                               "BLOCK_SIZE":20})
+                               "BLOCK_SIZE":20,
+                               "snake_length":2})
 
-
+        self.snake_length = env_config["snake_length"]
         self.BLOCK_SIZE = env_config["BLOCK_SIZE"]
         self.n_rows = env_config["gs"][0]
         self.n_cols = env_config["gs"][1]
@@ -86,8 +87,8 @@ class SnakeEnvDir(gym.Env):
         self.action_space = gym.spaces.Discrete(len(self.action_map.keys()))
 
         self.observation_space = gym.spaces.Box(
-            low=-100, high=self.n_rows*self.n_cols, shape=(self.n_rows, self.n_cols, 1),
-            dtype=np.int)
+            low=-1, high=1, shape=(self.n_rows, self.n_cols, 2),
+            dtype=float)
 
 
         self.window = None
@@ -107,10 +108,12 @@ class SnakeEnvDir(gym.Env):
 
         self.head = Point(self.w / 2, self.h / 2)
         self.snake = [self.head,
-                      Point(self.head.x - self.BLOCK_SIZE, self.head.y),
-                      Point(self.head.x - (2 * self.BLOCK_SIZE), self.head.y),
-                      Point(self.head.x - (3 * self.BLOCK_SIZE), self.head.y),
+                      #Point(self.head.x - self.BLOCK_SIZE, self.head.y),
+                      #Point(self.head.x - (2 * self.BLOCK_SIZE), self.head.y),
+                      #Point(self.head.x - (3 * self.BLOCK_SIZE), self.head.y),
                       ]
+        self.snake.extend(
+            [Point(self.head.x - ((n + 1) * self.BLOCK_SIZE), self.head.y) for n in range(self.snake_length)])
 
         self.score = 0
         self.food = None
@@ -164,7 +167,7 @@ class SnakeEnvDir(gym.Env):
 
     def plot_state(self,show = True):
 
-        plot_state = self.state[:, :, 0] + self.state[:, :, 1]*-1
+        plot_state = self.state[:, :, 0] + self.state[:, :, 1]*-2
         masked_array = np.ma.masked_where(plot_state == 0, plot_state)
 
         cmap = matplotlib.cm.jet  # Can be any colormap that you want after the cm
@@ -184,23 +187,26 @@ class SnakeEnvDir(gym.Env):
         assert self.action_space.contains(action), f"{action!r} ({type(action)}) invalid"
 
         score_before = self.score
-        food_distance_old = self.food_distance.copy()
+        food_distance_before = self.food_distance.copy()
         self._move(action)
-        score_after = self.score - score_before
+        score_after = (self.score - score_before)
 
         #upadte snake pos.
         self.snake.insert(0, self.head)
         self.get_observation()
 
         game_over = False
-        # reward = -self.food_distance/(self.w * np.sqrt(2))
+        reward = -self.food_distance/(self.w * np.sqrt(2))
+        reward =(food_distance_before- self.food_distance)/(np.sqrt(self.h * self.w))
 
-        reward = score_after
+        # reward = score_after
         self.reward = reward
+        reward = 0
+        self.reward = 0
 
         if self.is_collision() or self.step_without_scoring > (25 * len(self.snake)):
             game_over = True
-            reward = -100
+            reward = -1
             self.get_observation()
             self.reward = reward
             # self.plot_state()
@@ -209,7 +215,7 @@ class SnakeEnvDir(gym.Env):
 
         # Move head
         if self.head == self.food:
-            reward = 100 * len(self.snake)
+            reward = 1
             self.reward = reward
             # add score
             self.score += 1

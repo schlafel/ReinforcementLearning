@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
 
     NUM_ACTIONS = env.action_space.n-1
-    NUM_STATES = env.observation_space.n
+    NUM_STATES = env.observation_space.shape[0] + env.observation_space.shape[1]
     Q = np.zeros([NUM_STATES, NUM_ACTIONS]) #You could also make this dynamic if you don't know all games states upfront
     gamma = 0.9 # discount factor
     alpha = 0.9 # learning rate
@@ -35,5 +35,6 @@ if __name__ == '__main__':
                 #Q[obs,action] = rew + gamma * np.max(Q[obs2]) # same equation but with learning rate = 1 returns the basic Bellman equation
                 rew_tot = rew_tot + rew
                 obs = obs2
+                env.render()
         if episode % 50 == 0:
             print('Episode {} Total Reward: {}'.format(episode,rew_tot))

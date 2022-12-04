@@ -5,9 +5,25 @@ logger = logging.getLogger(__name__)
 
 register(
     id='Snake-v0',
-    entry_point='snake_gym.envs:SnakeEnv',
-    # timestep_limit=1000,
-    # reward_threshold=1.0,
-    # nondeterministic = True,
+    entry_point='snake_gym.envs:SnakeEnvV0',
+
+)
+
+
+register(
+    id='Snake-v1',
+    entry_point='snake_gym.envs:SnakeEnvV1',
+
+)
+
+register(
+    id='Snake-v2',
+    entry_point='snake_gym.envs:SnakeEnvV2',
+
+)
+register(
+    id='Snake-Vanilla',
+    entry_point='snake_gym.envs:SnakeEnvVanilla',
+
 )
 
