@@ -3,7 +3,7 @@ import random
 import numpy as np
 from collections import deque
 import gym
-import snake_gymDirected
+import snake_gym
 import tensorflow as tf
 
 
@@ -198,9 +198,9 @@ def train(env,render = True,n_epochs=1000):
 
 if __name__ == '__main__':
     print("yes")
-    env = gym.make("SnakeDir-v0", env_config={"gs": (12, 12),
+    env = gym.make("Snake-v2", env_config={"gs": (20, 20),
                                               "BLOCK_SIZE": 20,
-                                              "snake_length":0},
+                                              "snake_length":1},
                    )
 
 
