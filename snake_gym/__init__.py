@@ -26,4 +26,15 @@ register(
     entry_point='snake_gym.envs:SnakeEnvVanilla',
 
 )
+register(
+    id='Snake-v0PyTorch',
+    entry_point='snake_gym.envs:SnakeEnvV0PyTorch',
+
+)
+register(
+    id='Snake-v2PyTorch',
+    entry_point='snake_gym.envs:SnakeEnvV2PyTorch',
+
+)
+
 

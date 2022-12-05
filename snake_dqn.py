@@ -198,7 +198,7 @@ def train(env,render = True,n_epochs=1000):
 
 if __name__ == '__main__':
     print("yes")
-    env = gym.make("Snake-v2", env_config={"gs": (20, 20),
+    env = gym.make("Snake-v2", env_config={"gs": (8, 8),
                                               "BLOCK_SIZE": 20,
                                               "snake_length":1},
                    )
@@ -206,5 +206,5 @@ if __name__ == '__main__':
 
     N_EPOCHS = 1000
     train(env = env,
-          render = True,
+          render = False,
           n_epochs=N_EPOCHS)
