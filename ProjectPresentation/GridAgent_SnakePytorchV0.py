@@ -8,6 +8,7 @@ from torch import nn
 import torch.nn.functional as F
 from tqdm import tqdm
 from torchsummary import summary
+import numpy as np
 import tensorflow as tf
 import datetime
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
@@ -46,7 +47,11 @@ class DQN(nn.Module):
 
 
 
-def DeepQLearning(env: gym.Env, agent: Agent, num_episodes: int,env_name:str, max_steps=1000,
+def DeepQLearning(env: gym.Env,
+                  agent: Agent,
+                  num_episodes: int,
+                  env_name:str,
+                  max_steps=1000,
                   save_model=None,
                   render = False):
     reward_per_ep = list()
@@ -55,13 +60,14 @@ def DeepQLearning(env: gym.Env, agent: Agent, num_episodes: int,env_name:str, ma
     summary_writer = tf.summary.create_file_writer(log_dir)
 
     for i in tqdm(range(num_episodes)):
-        reward,n_steps = agent.episode(env, max_steps=max_steps)
+        reward,n_steps,losses = agent.episode(env, max_steps=max_steps)
         with summary_writer.as_default():
             tf.summary.scalar('Score', env.score, step=i)
             tf.summary.scalar('High-Score', env.high_score, step=i)
             tf.summary.scalar('Number of Play Steps', n_steps, step=i)
+            tf.summary.scalar('Losses', np.nanmean(losses), step=i)
         reward_per_ep.append(reward)
-        if i%1000 == 0:
+        if (i%1000 == 0) & (i != 0):
             render_video(env,agent,
                          os.path.join(log_dir,
                                       "Video_trained_{:d}.mp4".format(i)))

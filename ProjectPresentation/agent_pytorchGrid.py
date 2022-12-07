@@ -39,7 +39,8 @@ class ReplayBuffer:
         self.size = min(self.size + 1, self.max_size)
 
     def sample(self):
-        idxs = np.random.choice(self.size, size=self.batch_size, replace=False)
+        # idxs = np.random.choice(self.size, size=self.batch_size, replace=False)
+        idxs = np.random.randint(0,self.size, size=self.batch_size, )
 
         return (torch.from_numpy(self.obs_buf[idxs]).to(self.device),
                 torch.from_numpy(self.acts_buf[idxs]).long().to(self.device),
@@ -115,6 +116,7 @@ class Agent():
         state = env.reset()
         score = 0
         _ = 1
+        loss_list = []
         while True:
 
 
@@ -125,7 +127,8 @@ class Agent():
                 env.render()
 
             if not (self.optimal):
-                self.step(state, action, reward, next_state, done)
+                loss = self.step(state, action, reward, next_state, done)
+                loss_list.append(loss)
 
             state = next_state.copy()
             score += reward
@@ -138,7 +141,7 @@ class Agent():
                 break
             _+=1
 
-        return score,_
+        return score,_, loss_list
 
     def step(self, state, action, reward, next_state, done):
         # Save experience in replay memory
@@ -150,7 +153,9 @@ class Agent():
             # If enough samples are available in memory, get random subset and learn
             if len(self.memory) > self.batch_size:
                 experiences = self.memory.sample()
-                self.learn(experiences)
+                loss = self.learn(experiences)
+                return loss
+        return np.nan
 
 
 
@@ -163,22 +168,25 @@ class Agent():
         states, actions, rewards, next_states, dones = experiences
 
         # Get max predicted Q values (for next states) from target model
-        Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1) #.permute((0,3,1,2))
-        # Compute Q targets for current states
-        Q_targets = rewards.unsqueeze(1) + (self.gamma * Q_targets_next * (1 - dones.unsqueeze(1)))
-
+        with torch.no_grad():
+            Q_targets = (rewards + (1 - dones) * self.gamma * torch.max(self.qnetwork_target(next_states),
+                                                                        dim=1).values)[:, None]
         # Get expected Q values from local model
-        Q_expected = self.qnetwork_local(states).gather(1, actions.unsqueeze(1)) #.permute((0,3,1,2))
+        # Q_expected = self.qnetwork_local(states).gather(1, actions.unsqueeze(1)) #.permute((0,3,1,2))
+        Q_expected = self.qnetwork_local(states)[torch.arange(self.batch_size), actions].unsqueeze(1)
 
         # Compute loss
-        loss = F.mse_loss(Q_expected, Q_targets)
+        # loss = F.mse_loss(Q_expected, Q_targets)
+        loss = F.smooth_l1_loss(Q_expected,Q_targets)
         # Minimize the loss
         self.optimizer.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.qnetwork_local.parameters(), 10)
         self.optimizer.step()
 
         # ------------------- update target network ------------------- #
         self.soft_update(self.qnetwork_local, self.qnetwork_target, self.tau)
+        return loss.item()
 
     def act(self, state, eps=0.):
         """Returns actions for given state as per current policy.

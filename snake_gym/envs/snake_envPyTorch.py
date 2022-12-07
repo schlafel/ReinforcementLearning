@@ -96,7 +96,7 @@ class SnakeEnvV0PyTorch(SnakeEnvV0):
 
         game_over = False
         self.game_over = game_over
-        reward = -.1 if (food_distance - old_food_distance) < 0 else .1
+        reward = .1 if (food_distance - old_food_distance) < 0 else -.1
 
         #check if collision
         if self.is_collision() or self.frame_iteration > 25 * len(self.snake):
