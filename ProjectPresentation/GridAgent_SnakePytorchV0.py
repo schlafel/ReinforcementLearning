@@ -10,6 +10,7 @@ from tqdm import tqdm
 from torchsummary import summary
 import tensorflow as tf
 import datetime
+from gym.wrappers.monitoring.video_recorder import VideoRecorder
 class DQN(nn.Module):
 
     def __init__(self, action_size, input_channels=1):
@@ -45,7 +46,9 @@ class DQN(nn.Module):
 
 
 
-def DeepQLearning(env: gym.Env, agent: object, num_episodes: int,env_name:str, max_steps=1000,  save_model=None,render = False):
+def DeepQLearning(env: gym.Env, agent: Agent, num_episodes: int,env_name:str, max_steps=1000,
+                  save_model=None,
+                  render = False):
     reward_per_ep = list()
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     log_dir = 'logs/dqn_{}/'.format(env_name) + current_time
@@ -58,26 +61,52 @@ def DeepQLearning(env: gym.Env, agent: object, num_episodes: int,env_name:str, m
             tf.summary.scalar('High-Score', env.high_score, step=i)
             tf.summary.scalar('Number of Play Steps', n_steps, step=i)
         reward_per_ep.append(reward)
+        if i%1000 == 0:
+            render_video(env,agent,
+                         os.path.join(log_dir,
+                                      "Video_trained_{:d}.mp4".format(i)))
+
 
     if save_model is not None:
-        torch.save(agent.qnetwork_local.state_dict(), save_model)
+        # torch.save(agent.qnetwork_local.state_dict(), save_model)
+        torch.save(agent.qnetwork_local.state_dict(), os.path.join(log_dir,os.path.basename(save_model)))
 
-    return reward_per_ep
+    return reward_per_ep,log_dir
+
+
+def render_video(env,agent, video_path,epsilon = 0.0):
+
+    env.metadata["render_fps"] = 5
+    video = VideoRecorder(env, video_path)
+    # returns an initial observation
+    observation = env.reset()
+    for i in range(0,1000):
+        env.render()
+        video.capture_frame()
+        # env.action_space.sample() produces either 0 (left) or 1 (right).
+        observation, reward, done, info = env.step(agent.act(observation,eps=epsilon))
+        # Not printing this time
+        # print("step", i, observation, reward, done, info)
+        if done:
+            break
+    video.close()
+    env.close()
+
 
 
 
 if __name__ == '__main__':
     # set parameters of the Agent and ReplayBuffer
     lr = 1e-4
-    batch_size = 128
-    update_every = 5
+    batch_size = 256
+    update_every = 10
     gamma = 0.99
     tau = 0.5
     epsilon = 0.1
 
 
     # number of episodes and file path to save the model
-    num_episodes = 30000
+    num_episodes = 20_000
 
 
 
@@ -113,8 +142,19 @@ if __name__ == '__main__':
                   gamma=gamma,
                   tau=tau,
                   epsilon=epsilon,
-                  render = render)
+                  render = render,
+                  optimal = False)
 
 
-    R = DeepQLearning(env, agent, num_episodes, save_model=save_model,
+    R,log_dir = DeepQLearning(env, agent, num_episodes, save_model=save_model,
                       env_name=env_name)
+
+
+
+
+
+
+
+
+
+
