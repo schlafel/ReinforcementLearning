@@ -176,7 +176,7 @@ class Agent():
         Q_expected = self.qnetwork_local(states)[torch.arange(self.batch_size), actions].unsqueeze(1)
 
         # Compute loss
-        # loss = F.mse_loss(Q_expected, Q_targets)
+        #loss = F.mse_loss(Q_expected, Q_targets)
         loss = F.smooth_l1_loss(Q_expected,Q_targets)
         # Minimize the loss
         self.optimizer.zero_grad()

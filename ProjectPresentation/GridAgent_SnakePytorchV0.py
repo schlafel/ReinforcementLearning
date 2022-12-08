@@ -35,8 +35,8 @@ class DQN(nn.Module):
 
     def forward(self, x):
         x = x.to(self.device)
-        x = self.conv1(x)
-        x = self.conv2(x)
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
         x = self.flat1(x)
 
         #print(x.shape)
@@ -86,7 +86,7 @@ def render_video(env,agent, video_path,epsilon = 0.0):
     video = VideoRecorder(env, video_path)
     # returns an initial observation
     observation = env.reset()
-    for i in range(0,1000):
+    for i in range(0,250):
         env.render()
         video.capture_frame()
         # env.action_space.sample() produces either 0 (left) or 1 (right).
