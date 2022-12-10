@@ -81,12 +81,13 @@ def DeepQLearning(env: gym.Env,
     summary_writer = tf.summary.create_file_writer(log_dir)
 
     for i in tqdm(range(num_episodes)):
-        reward,n_steps,losses = agent.episode(env, max_steps=max_steps)
+        reward,n_steps,losses,eps = agent.episode(env, max_steps=max_steps,episode = i)
         with summary_writer.as_default():
             tf.summary.scalar('Score', env.score, step=i)
             tf.summary.scalar('High-Score', env.high_score, step=i)
             tf.summary.scalar('Number of Play Steps', n_steps, step=i)
             tf.summary.scalar('Losses', np.nanmean(losses), step=i)
+            tf.summary.scalar('Epsilon', eps, step=i)
         reward_per_ep.append(reward)
         if (i%1000 == 0) & (i != 0):
             render_video(env,agent,
@@ -129,11 +130,12 @@ if __name__ == '__main__':
     update_every = 10
     gamma = 0.99
     tau = 0.5
-    epsilon = 0.1
+    epsilon = 1
+    epsilon_decay = 0.999
 
 
     # number of episodes and file path to save the model
-    num_episodes = 200_00
+    num_episodes = 200_000
 
 
 
@@ -173,6 +175,7 @@ if __name__ == '__main__':
                   gamma=gamma,
                   tau=tau,
                   epsilon=epsilon,
+                  epsilon_decay = epsilon_decay,
                   render = render,
                   optimal = False)
 

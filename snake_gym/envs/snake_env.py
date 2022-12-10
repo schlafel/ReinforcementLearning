@@ -184,7 +184,7 @@ class SnakeEnvV0(gym.Env):
         game_over = False
         self.game_over = game_over
         reward = 0
-        if self.is_collision() or self.frame_iteration > 25 * len(self.snake):
+        if self.is_collision() or self.frame_iteration > (25 * len(self.snake)):
             game_over = True
             self.game_over = game_over
             reward = -10
@@ -209,6 +209,7 @@ class SnakeEnvV0(gym.Env):
         if self.screen is not None:
             self.renderer.render_step()
 
+        self.frame_iteration+=1
         return self.state, reward, game_over, False, self.info,
 
     def render(self, mode="human"):

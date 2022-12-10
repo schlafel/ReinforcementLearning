@@ -76,7 +76,9 @@ class Agent():
                  batch_size=64,
                  update_every=5,
                  gamma=0.99, tau=1e-3,
-                 epsilon=0.1, seed=0,
+                 epsilon=0.1,
+                 epsilon_decay = 0.99,
+                 seed=0,
                  render=False, optimal=False):
         """Initialize an Agent object.
 
@@ -102,6 +104,7 @@ class Agent():
         self.gamma = gamma
         self.tau = tau
         self.epsilon = epsilon
+        self.epsilon_decay = epsilon_decay
 
         self.render = render
         self.optimal = optimal
@@ -111,16 +114,20 @@ class Agent():
         # Initialize time step (for updating every update_every steps)
         self.t_step = 0
 
-    def episode(self, env, max_steps=1000):
+    def episode(self, env, max_steps=1000,episode = 1):
 
         state = env.reset()
         score = 0
         _ = 1
         loss_list = []
         while True:
+            if self.optimal:
+                eps = 0
+            else:
+                eps = max(0.01, self.epsilon * self.epsilon_decay**episode)
 
 
-            action = self.act(state, self.epsilon)
+            action = self.act(state, eps=eps)
             #a = env.step(action)
             next_state, reward, done, info = env.step(action)
             if self.render:
@@ -141,7 +148,7 @@ class Agent():
                 break
             _+=1
 
-        return score,_, loss_list
+        return score,_, loss_list,eps
 
     def step(self, state, action, reward, next_state, done):
         # Save experience in replay memory

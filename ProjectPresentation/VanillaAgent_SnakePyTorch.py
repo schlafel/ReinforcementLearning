@@ -17,7 +17,8 @@ def render_video(env,agent, video_path,epsilon = 0.0):
     video = VideoRecorder(env, video_path)
     # returns an initial observation
     observation = env.reset()
-    for i in range(0,250):
+    done = False
+    while not done:
         env.render()
         video.capture_frame()
         # env.action_space.sample() produces either 0 (left) or 1 (right).
@@ -76,7 +77,7 @@ def DeepQLearning(env: gym.Env, agent: Agent, num_episodes: int, max_steps=1000,
             tf.summary.scalar('Number of Play Steps', n_steps, step=i)
             tf.summary.scalar('Losses', np.nanmean(losses), step=i)
         # reward_per_ep.append(reward)
-        if (i%1000 == 0) & (i != 0):
+        if (i%100 == 0) & (i != 0):
             render_video(env,agent,
                          os.path.join(log_dir,
                                       "Video_trained_{:d}.mp4".format(i)))
@@ -99,7 +100,7 @@ if __name__ == '__main__':
 
 
     # number of episodes and file path to save the model
-    num_episodes = 1500
+    num_episodes = 500
 
 
 
@@ -111,7 +112,7 @@ if __name__ == '__main__':
                                               "BLOCK_SIZE": 20,
                                               "snake_length":0},)
 
-    env.metadata["render_fps"] = 5
+    env.metadata["render_fps"] = 15
 
 
     model_dir = os.path.join(".", 'Models',env_name)
@@ -138,4 +139,5 @@ if __name__ == '__main__':
                   render = render)
 
 
-    R = DeepQLearning(env, agent, num_episodes, save_model=save_model)
+    R = DeepQLearning(env, agent, num_episodes, save_model=save_model,
+                      env_name=env_name)
