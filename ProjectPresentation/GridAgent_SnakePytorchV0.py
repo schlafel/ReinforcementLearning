@@ -14,37 +14,58 @@ import datetime
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 class DQN(nn.Module):
 
-    def __init__(self, action_size, input_channels=1):
+    def __init__(self,  h, w, action_size = 4,input_channels = 2):
         super().__init__()
 
         self.action_size = action_size
-
-        # Network
-        self.conv1 = nn.Conv2d(input_channels, 64, 3,stride=2)
-        self.conv2 = nn.Conv2d(64,32,3,stride=2)
-
-        self.flat1 = nn.Flatten()
-        self.f1 = nn.LazyLinear(128)
-
-        self.f2 = nn.LazyLinear(128)
-        self.bn2 = nn.BatchNorm1d(128)
-        self.head = nn.Linear(128, self.action_size)
+        #
+        # # Network
+        # self.conv1 = nn.Conv2d(input_channels, 64, 3,stride=2)
+        # self.bn1 = nn.BatchNorm2d(64)
+        # self.conv2 = nn.Conv2d(64,32,3,stride=2)
+        # self.bn2 = nn.BatchNorm2d(32)
+        # self.flat1 = nn.Flatten()
+        # self.f1 = nn.LazyLinear(128)
+        #
+        # self.f2 = nn.LazyLinear(128)
+        # self.bn3 = nn.BatchNorm1d(128)
+        # self.head = nn.Linear(128, self.action_size)
 
         # Device
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.conv1 = nn.Conv2d(input_channels, 16, kernel_size=3, stride=1)
+        self.bn1 = nn.BatchNorm2d(16)
+        self.conv2 = nn.Conv2d(16, 16*input_channels, kernel_size=3, stride=1)
+        self.bn2 = nn.BatchNorm2d(16*input_channels)
+        self.conv3 = nn.Conv2d(16*input_channels, 32, kernel_size=3, stride=1)
+        self.bn3 = nn.BatchNorm2d(32)
 
+        # Number of Linear input connections depends on output of conv2d layers
+        # and therefore the input image size, so compute it.
+        def conv2d_size_out(size, kernel_size=3, stride=1):
+            return (size - (kernel_size - 1) - 1) // stride + 1
+
+        convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
+        convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
+        linear_input_size = convw * convh * 32
+        self.head = nn.Linear(linear_input_size, action_size)
+
+        # Called with either one element to determine next action, or a batch
+        # during optimization. Returns tensor([[left0exp,right0exp]...]).
     def forward(self, x):
+        """
+
+        Args:
+            x: Tensor representation of input states
+
+        Returns:
+            list of int: representing the Q values of each state-action pair
+        """
         x = x.to(self.device)
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = self.flat1(x)
-
-        #print(x.shape)
-        x = F.relu((self.f1(x)))
-        x = F.relu(self.bn2(self.f2(x)))
-
-        return self.head(x)
-
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = F.relu(self.bn3(self.conv3(x)))
+        return self.head(x.view(x.size(0), -1))
 
 
 def DeepQLearning(env: gym.Env,
@@ -104,7 +125,7 @@ def render_video(env,agent, video_path,epsilon = 0.0):
 if __name__ == '__main__':
     # set parameters of the Agent and ReplayBuffer
     lr = 1e-4
-    batch_size = 256
+    batch_size = 512
     update_every = 10
     gamma = 0.99
     tau = 0.5
@@ -112,7 +133,7 @@ if __name__ == '__main__':
 
 
     # number of episodes and file path to save the model
-    num_episodes = 20_000
+    num_episodes = 200_00
 
 
 
@@ -120,9 +141,11 @@ if __name__ == '__main__':
     seed = 0
     render = False
     env_name = "Snake-v0PyTorch"
-    env = gym.make(env_name,env_config={"gs": (10, 10),
+    gs = (8,8)
+    env = gym.make(env_name,env_config={"gs": gs,
                                               "BLOCK_SIZE": 20,
-                                              "snake_length":1},)
+                                              "snake_length":0},)
+    env.metadata["render_fps"] = 5
 
 
     model_dir = os.path.join(".", 'Models',env_name)
@@ -130,7 +153,9 @@ if __name__ == '__main__':
     os.makedirs(model_dir, exist_ok=True)
 
     # instantiate Q-network
-    dqn = DQN(action_size=env.action_space.n,
+    dqn = DQN(h= gs[0],
+              w = gs[0],
+              action_size=env.action_space.n,
               input_channels = env.reset().shape[0])
     summary(dqn.cuda(), input_size=env.reset().shape)
     # instantiate memory buffer

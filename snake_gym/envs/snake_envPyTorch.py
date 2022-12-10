@@ -1,12 +1,40 @@
-import random
-
+import pygame
 import numpy as np
+import gym
+from gym.error import DependencyNotInstalled
+from gym.utils.renderer import Renderer
+from enum import Enum
+import random
+from collections import namedtuple
 
 from snake_gym.envs import SnakeEnvV0
 from snake_gym.envs.snake_env import Point
 import gym
 
 
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")
+
+
+class Direction(Enum):
+    RIGHT = 0
+    DOWN = 1
+    LEFT = 2
+    UP = 3
+
+BLOCK_SIZE = 200
+snake_speed = 15
+
+Point = namedtuple('Point', 'x, y')
+pygame.init()
+# defining colors
+black = pygame.Color(0, 0, 0)
+white = pygame.Color(255, 255, 255)
+red = pygame.Color(255, 0, 0)
+green = pygame.Color(0, 255, 0)
+blue = pygame.Color(0, 0, 255)
+font = pygame.font.SysFont('arial', 25)
 class SnakeEnvV0PyTorch(SnakeEnvV0):
     #Agent with Borders and config for pytroch
     def __init__(self,action_map=None,
@@ -96,11 +124,12 @@ class SnakeEnvV0PyTorch(SnakeEnvV0):
 
         game_over = False
         self.game_over = game_over
-        reward = .1 if (food_distance - old_food_distance) < 0 else -.1
-
+        # reward = .1 if (food_distance - old_food_distance) < 0 else -.1
+        reward = 0
         #check if collision
-        if self.is_collision() or self.frame_iteration > 25 * len(self.snake):
+        if self.is_collision() or self.frame_iteration > (25 * len(self.snake)):
             game_over = True
+            self.snake.pop()
             self.game_over = game_over
             reward = -10
             self.get_observation()
@@ -124,5 +153,80 @@ class SnakeEnvV0PyTorch(SnakeEnvV0):
         #perform render step
         if self.screen is not None:
             self.renderer.render_step()
+        self.frame_iteration+= 1
 
         return self.state, reward, game_over, False, self.info,
+
+
+    def _render(self, mode="human"):
+        assert mode in self.metadata["render_modes"]
+        try:
+            import pygame
+            from pygame import gfxdraw
+        except ImportError:
+            raise DependencyNotInstalled(
+                "pygame is not installed, run `pip install gym[classic_control]`"
+            )
+
+        if self.screen is None:
+            pygame.init()
+            if mode == "human":
+                self.screen = pygame.display.set_mode(
+                    (self.w, self.h)
+                )
+            else:  # mode in {"rgb_array", "single_rgb_array"}
+                self.screen = pygame.Surface((self.w, self.h))
+            if self.clock is None:
+                self.clock = pygame.time.Clock()
+
+
+        # self.surf = pygame.Surface((self.w, self.h))
+
+
+        self.screen.fill(black)
+
+        #draw border
+        #lower border
+        pygame.draw.rect(self.screen, red,
+                         pygame.Rect(0, 0, self.w, self.BLOCK_SIZE))
+        pygame.draw.rect(self.screen, red,
+                         pygame.Rect(0, 0, self.BLOCK_SIZE, self.h))
+        pygame.draw.rect(self.screen, red,
+                         pygame.Rect(self.w-self.BLOCK_SIZE, 0, self.BLOCK_SIZE, self.h))
+        pygame.draw.rect(self.screen, red,
+                         pygame.Rect(0, self.h-self.BLOCK_SIZE,self.w , self.BLOCK_SIZE))
+
+        #draw snake
+        pygame.draw.rect(self.screen, red,
+                         pygame.Rect(self.snake[0].x, self.snake[0].y, self.BLOCK_SIZE, self.BLOCK_SIZE))
+        pygame.draw.rect(self.screen, black,
+                         pygame.Rect(self.snake[0].x + 5, self.snake[0].y + 5, self.BLOCK_SIZE - 10,
+                                     self.BLOCK_SIZE - 10))
+
+        for pt in self.snake[1:]:
+            pygame.draw.rect(self.screen, green,
+                             pygame.Rect(pt.x + 2, pt.y + 2, self.BLOCK_SIZE - 4, self.BLOCK_SIZE - 4))
+            pygame.draw.rect(self.screen, black,
+                             pygame.Rect(pt.x + 5, pt.y + 5, self.BLOCK_SIZE - 10, self.BLOCK_SIZE - 10))
+            pygame.draw.circle(self.screen, red, (pt.x + 10,
+                                                   pt.y + 10), 2, 2)
+        pygame.draw.rect(self.screen, white, pygame.Rect(self.food.x, self.food.y, self.BLOCK_SIZE, self.BLOCK_SIZE))
+
+        text = font.render("Score: " + str(self.score) + " (" + str(self.high_score)+ ")", True, white)
+
+        self.screen.blit(text, [0, 0])
+        # self.screen.blit(self.surf, (0,0))
+
+
+        if mode == "human":
+            pygame.event.pump()
+            self.clock.tick(self.metadata["render_fps"])
+            pygame.display.flip()
+
+        elif mode in {"rgb_array", "single_rgb_array"}:
+            return np.transpose(
+                np.array(pygame.surfarray.pixels3d(self.screen)), axes=(1, 0, 2)
+            )
+
+
+

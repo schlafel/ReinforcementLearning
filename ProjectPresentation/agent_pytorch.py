@@ -113,7 +113,7 @@ class Agent():
 
         state = env.reset()
         score = 0
-
+        loss_list = []
 
         for _ in range(max_steps):
 
@@ -124,18 +124,20 @@ class Agent():
                 env.render()
 
             if not (self.optimal):
-                self.step(state, action, reward, next_state, done)
+                loss = self.step(state, action, reward, next_state, done)
+                loss_list.append(loss)
 
             state = next_state
             score += reward
             if done:
                 break
 
-        return score
+        return  score,_, loss_list
 
     def step(self, state, action, reward, next_state, done):
         # Save experience in replay memory
         self.memory.add(state, action, reward, next_state, done)
+        loss = np.nan
 
         # Learn every update_every time steps
         self.t_step = (self.t_step + 1) % self.update_every
@@ -143,7 +145,9 @@ class Agent():
             # If enough samples are available in memory, get random subset and learn
             if len(self.memory) > self.batch_size:
                 experiences = self.memory.sample()
-                self.learn(experiences)
+                loss = self.learn(experiences)
+
+        return loss
 
     def learn(self, experiences):
         """Update value parameters using given batch of experience tuples.
@@ -170,6 +174,7 @@ class Agent():
 
         # ------------------- update target network ------------------- #
         self.soft_update(self.qnetwork_local, self.qnetwork_target, self.tau)
+        return loss.item()
 
     def act(self, state, eps=0.):
         """Returns actions for given state as per current policy.
