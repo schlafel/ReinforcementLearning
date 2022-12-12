@@ -115,7 +115,7 @@ if __name__ == '__main__':
               w = gs[0],
               action_size=env.action_space.n,
               input_channels = env.reset().shape[0])
-    dqn.load_state_dict(torch.load(r".\logs\dqn_Snake-v0PyTorch_20x20\20221212-122608\ffdqn_50000episodes_20000.pth"))
+    dqn.load_state_dict(torch.load(r"./logs/dqn_Snake-v0PyTorch_20x20/20221212-170420/ffdqn_100000episodes_36000.pth"))
 
     agent = Agent(dqn,
                   None,
@@ -130,7 +130,7 @@ if __name__ == '__main__':
                   optimal=True,
                   )
 
-    render_video(env, agent, r"test7_20000.mp4", epsilon=0.0,debug = True)
+    render_video(env, agent, r"SnakeV1_36000.mp4", epsilon=0.0,debug = True)
 
 
     print("done")

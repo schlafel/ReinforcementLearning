@@ -134,11 +134,11 @@ if __name__ == '__main__':
     update_every = 10
     gamma = 0.99
     tau = 0.5
-    epsilon = .11
+    epsilon = .015
     epsilon_decay = 0.99993
 
     # number of episodes and file path to save the model
-    num_episodes = 100_000
+    num_episodes = 20_000
 
 
     buffer_size = int(1e+5)
@@ -164,7 +164,7 @@ if __name__ == '__main__':
 
 
     #resume training....
-    dqn.load_state_dict(torch.load(r".\logs\dqn_Snake-v0PyTorch_20x20\20221212-122608\ffdqn_50000episodes_20000.pth"))
+    dqn.load_state_dict(torch.load(r"./logs/dqn_Snake-v0PyTorch_20x20/20221212-170420/ffdqn_100000episodes_36000.pth"))
 
     summary(dqn.cuda(), input_size=env.reset().shape)
     # instantiate memory buffer
