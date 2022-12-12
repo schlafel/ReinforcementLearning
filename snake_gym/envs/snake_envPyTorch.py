@@ -258,10 +258,10 @@ class SnakeEnvV1PyTorch(SnakeEnvV0):
         self.state = self.set_borders(self.state)
         # update the state (array)
         # put snake in array (0th channel)
-        for _i,pt in enumerate(reversed(self.snake)):
+        for _i,pt in enumerate((self.snake)):
             # self.state[int(pt.y // self.n_rows), int(pt.x // self.n_cols), 0] = .5
             self.state[0, int(pt.y /self.BLOCK_SIZE),
-                       int(pt.x / self.BLOCK_SIZE)] = 1 + _i
+                       int(pt.x / self.BLOCK_SIZE)] = self.n_cells- _i
         #set Head to 0
         # self.state[0, int(pt.y / self.BLOCK_SIZE), int(pt.x / self.BLOCK_SIZE)] = 3
 
@@ -277,10 +277,10 @@ class SnakeEnvV1PyTorch(SnakeEnvV0):
     def set_borders(self,array):
 
 
-        array[0,:,0] = self.n_cells
-        array[0, 0,:] = self.n_cells
-        array[0,:,self.n_cols-1] = self.n_cells
-        array[0,self.n_rows-1,:] = self.n_cells
+        array[0,:,0] = self.n_cells + 10
+        array[0, 0,:] = self.n_cells + 10
+        array[0,:,self.n_cols-1] = self.n_cells + 10
+        array[0,self.n_rows-1,:] = self.n_cells + 10
         return array
 
 
@@ -308,12 +308,12 @@ class SnakeEnvV1PyTorch(SnakeEnvV0):
 
 
         # print(action)
-        assert self.action_space.contains(action), f"{action!r} ({type(action)}) invalid"
+        # assert self.action_space.contains(action), f"{action!r} ({type(action)}) invalid"
         old_food_distance = self.food_distance
         self._move(action)
         self.snake.insert(0, self.head)
 
-        food_distance = self.calc_distance_food()
+        # food_distance = self.calc_distance_food()
         # print(food_distance - old_food_distance)
 
         game_over = False
@@ -321,7 +321,7 @@ class SnakeEnvV1PyTorch(SnakeEnvV0):
         # reward = .1 if (food_distance - old_food_distance) < 0 else -.1
         reward = 0
         #check if collision
-        if self.is_collision() or self.frame_iteration > (25 * len(self.snake)):
+        if self.is_collision() or self.frame_iteration > (20 * len(self.snake)):
             game_over = True
             self.snake.pop()
             self.game_over = game_over

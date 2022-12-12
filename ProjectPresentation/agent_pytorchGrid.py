@@ -120,7 +120,7 @@ class Agent():
         # score = 0
         _ = 1
         loss_list = []
-
+        score = 0
         if self.optimal:
             eps = 0
         else:
@@ -136,7 +136,7 @@ class Agent():
             if not (self.optimal):
                 loss = self.step(state, action, reward, next_state, done)
                 loss_list.append(loss)
-
+            score += env.score - score
             state = next_state.copy()
 
             if done:

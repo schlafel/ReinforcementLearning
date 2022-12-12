@@ -94,6 +94,10 @@ def DeepQLearning(env: gym.Env,
                          os.path.join(log_dir,
                                       "Video_trained_{:d}.mp4".format(i)))
 
+        if (i%5000) == 0:
+          torch.save(agent.qnetwork_local.state_dict(),
+                     os.path.join(log_dir,os.path.basename(save_model)).replace(".pth","_" + str(i)+".pth"))
+
 
     if save_model is not None:
         # torch.save(agent.qnetwork_local.state_dict(), save_model)
@@ -104,11 +108,12 @@ def DeepQLearning(env: gym.Env,
 
 def render_video(env,agent, video_path,epsilon = 0.0):
 
-    env.metadata["render_fps"] = 5
+    env.metadata["render_fps"] = 15
     video = VideoRecorder(env, video_path)
     # returns an initial observation
     observation = env.reset()
-    for i in range(0,250):
+    done = False
+    while not done:
         env.render()
         video.capture_frame()
         # env.action_space.sample() produces either 0 (left) or 1 (right).
