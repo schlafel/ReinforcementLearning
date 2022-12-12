@@ -103,7 +103,6 @@ if __name__ == '__main__':
     num_episodes = 500
 
 
-
     buffer_size = int(1e+3)
     seed = 0
     render = False

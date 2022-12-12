@@ -133,10 +133,8 @@ if __name__ == '__main__':
     epsilon = 1
     epsilon_decay = 0.999
 
-
     # number of episodes and file path to save the model
     num_episodes = 200_000
-
 
 
     buffer_size = int(1e+5)
@@ -150,7 +148,7 @@ if __name__ == '__main__':
     env.metadata["render_fps"] = 5
 
 
-    model_dir = os.path.join(".", 'Models',env_name)
+    model_dir = os.path.join(".", 'Models',env_name + "_" + "x".join([str(g) for g in gs]))
     save_model = os.path.join(model_dir, 'ffdqn_{}episodes.pth'.format(num_episodes))
     os.makedirs(model_dir, exist_ok=True)
 
