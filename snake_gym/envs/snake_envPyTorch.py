@@ -144,6 +144,7 @@ class SnakeEnvV0PyTorch(SnakeEnvV0):
             if self.score > self.high_score:
                 self.high_score = self.score
             self._place_food()
+            self.frame_iteration = 0
         else:
             self.snake.pop()
 

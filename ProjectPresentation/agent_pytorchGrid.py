@@ -196,7 +196,7 @@ class Agent():
         self.soft_update(self.qnetwork_local, self.qnetwork_target, self.tau)
         return loss.item()
 
-    def act(self, state, eps=0.):
+    def act(self, state, eps=0.,debug = False):
         """Returns actions for given state as per current policy.
 
         Params
@@ -204,11 +204,15 @@ class Agent():
             state (array_like): current state
             eps (float): epsilon, for epsilon-greedy action selection
         """
-        state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
+        state = torch.from_numpy(state).unsqueeze(0)#.float().to(self.device)
         self.qnetwork_local.eval()
 
         with torch.no_grad():
             action_values = self.qnetwork_local(state) #no permutation .permute((0,3,1,2))
+        if debug:
+            print(30*"*")
+            for dir, val in list(zip(["right", "down", "left", "up"], list(action_values.cpu().numpy().flatten()))):
+                print(dir, val)
         self.qnetwork_local.train()
 
         # Epsilon-greedy action selection

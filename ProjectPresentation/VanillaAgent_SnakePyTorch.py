@@ -10,7 +10,7 @@ import tensorflow as tf
 import datetime
 from tqdm import tqdm
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
-
+from torchsummary import summary
 def render_video(env,agent, video_path,epsilon = 0.0):
 
     env.metadata["render_fps"] = 5
@@ -125,6 +125,7 @@ if __name__ == '__main__':
     dqn = DQN(action_size=env.action_space.n,
               input_dim=env.observation_space.n)
 
+    summary(dqn.cuda(), input_size=env.reset().shape)
     # instantiate memory buffer
     memory = ReplayBuffer(obs_dim=env.observation_space.n,
                           size=buffer_size,

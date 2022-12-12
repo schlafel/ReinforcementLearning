@@ -147,23 +147,33 @@ class SnakeEnvV0(gym.Env):
         return self.state
 
 
-    def plot_state(self,show = True):
+    def plot_state(self,show = True,actions = None):
         if self.state.shape[0] == 1:
             plot_state = self.state[0, :, :]
         elif self.state.shape[0] == 2:
             plot_state = self.state[0, :, :]
         elif self.state.shape[2] > 1:
-            plot_state = self.state[:, :, 0] + self.state[:, :, 1]*-2
+            plot_state = self.state[:, :, 0] + self.state[:, :, 1] * -2
         else:
             plot_state = self.state[:, :, 0]
         masked_array = np.ma.masked_where(plot_state == 0, plot_state)
-
         cmap = matplotlib.cm.jet  # Can be any colormap that you want after the cm
         cmap.set_bad(color='white')
         fig, ax = plt.subplots(1)
         ax.matshow(masked_array, cmap=cmap)
         ax.axis("equal")
         ax.axis("off")
+
+        for (i, j), z in np.ndenumerate(masked_array):
+            ax.text(j, i, '{:.0f}'.format(z), ha='center', va='center', fontsize=6,
+                    color="white" if z < -1 else "black")
+        dirs = ["Right", "Down", "Left", "Up"]
+        if actions is not None:
+            for _i, val in enumerate(actions.cpu().numpy().flatten()):
+                ax.text(-4.5, -.5 + 1 * _i, dirs[_i] + ": {:.2f}".format(val),
+                        weight="bold" if val == max(actions.cpu().numpy().flatten()) else "normal")
+
+        plt.tight_layout()
         if show:
             plt.show()
             
@@ -200,6 +210,7 @@ class SnakeEnvV0(gym.Env):
             if self.score > self.high_score:
                 self.high_score = self.score
             self._place_food()
+            self.frame_iteration = 0
         else:
             self.snake.pop()
 
