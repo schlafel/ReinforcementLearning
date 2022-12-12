@@ -33,12 +33,12 @@ class DQN(nn.Module):
 
         # Device
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.conv1 = nn.Conv2d(input_channels, 16, kernel_size=3, stride=1)
-        self.bn1 = nn.BatchNorm2d(16)
-        self.conv2 = nn.Conv2d(16, 16*input_channels, kernel_size=3, stride=1)
+        self.conv1 = nn.Conv2d(input_channels, 32, kernel_size=3, stride=1)
+        self.bn1 = nn.BatchNorm2d(32)
+        self.conv2 = nn.Conv2d(32, 16*input_channels, kernel_size=3, stride=1)
         self.bn2 = nn.BatchNorm2d(16*input_channels)
-        self.conv3 = nn.Conv2d(16*input_channels, 32, kernel_size=3, stride=1)
-        self.bn3 = nn.BatchNorm2d(32)
+        self.conv3 = nn.Conv2d(16*input_channels, 16, kernel_size=3, stride=1)
+        self.bn3 = nn.BatchNorm2d(16)
 
         # Number of Linear input connections depends on output of conv2d layers
         # and therefore the input image size, so compute it.
@@ -47,7 +47,7 @@ class DQN(nn.Module):
 
         convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
         convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
-        linear_input_size = convw * convh * 32
+        linear_input_size = convw * convh * 16
         self.head = nn.Linear(linear_input_size, action_size)
 
         # Called with either one element to determine next action, or a batch
@@ -77,7 +77,7 @@ def DeepQLearning(env: gym.Env,
                   render = False):
     reward_per_ep = list()
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    log_dir = 'logs/dqn_{}/'.format(env_name) + current_time
+    log_dir = 'logs/dqn_{}/'.format(os.path.basename(os.path.dirname(save_model))) + current_time
     summary_writer = tf.summary.create_file_writer(log_dir)
 
     for i in tqdm(range(num_episodes)):

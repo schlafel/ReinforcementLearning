@@ -65,7 +65,7 @@ def DeepQLearning(env: gym.Env, agent: Agent, num_episodes: int, max_steps=1000,
 
     reward_per_ep = list()
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    log_dir = 'logs/dqn_{}/'.format(env_name) + current_time
+    log_dir = 'logs/dqn_{}/'.format(os.path.basename(os.path.dirname(save_model))) + current_time
     summary_writer = tf.summary.create_file_writer(log_dir)
 
     for i in tqdm(range(num_episodes)):
@@ -107,14 +107,17 @@ if __name__ == '__main__':
     seed = 0
     render = False
     env_name ="Snake-Vanilla"
-    env = gym.make(env_name,env_config={"gs": (20, 20),
+    gs = (20, 20)
+
+
+    env = gym.make(env_name,env_config={"gs": gs,
                                               "BLOCK_SIZE": 20,
                                               "snake_length":0},)
 
     env.metadata["render_fps"] = 15
 
 
-    model_dir = os.path.join(".", 'Models',env_name)
+    model_dir = os.path.join(".", 'Models',env_name + "_" + "x".join([str(g) for g in gs]))
     save_model = os.path.join(model_dir, 'ffdqn_{}episodes.pth'.format(num_episodes))
     os.makedirs(model_dir, exist_ok=True)
 

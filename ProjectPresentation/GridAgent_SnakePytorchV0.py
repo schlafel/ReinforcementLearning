@@ -77,7 +77,7 @@ def DeepQLearning(env: gym.Env,
                   render = False):
     reward_per_ep = list()
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    log_dir = 'logs/dqn_{}/'.format(env_name) + current_time
+    log_dir = 'logs/dqn_{}/'.format(os.path.basename(os.path.dirname(save_model))) + current_time
     summary_writer = tf.summary.create_file_writer(log_dir)
 
     for i in tqdm(range(num_episodes)):
