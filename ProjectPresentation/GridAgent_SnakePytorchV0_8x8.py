@@ -33,9 +33,9 @@ class DQN(nn.Module):
 
         # Device
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.conv1 = nn.Conv2d(input_channels, 32, kernel_size=3, stride=1)
-        self.bn1 = nn.BatchNorm2d(32)
-        self.conv2 = nn.Conv2d(32, 16*input_channels, kernel_size=3, stride=1)
+        self.conv1 = nn.Conv2d(input_channels, 16, kernel_size=3, stride=1)
+        self.bn1 = nn.BatchNorm2d(16)
+        self.conv2 = nn.Conv2d(16, 16*input_channels, kernel_size=3, stride=1)
         self.bn2 = nn.BatchNorm2d(16*input_channels)
         self.conv3 = nn.Conv2d(16*input_channels, 32, kernel_size=3, stride=1)
         self.bn3 = nn.BatchNorm2d(32)
@@ -131,21 +131,21 @@ if __name__ == '__main__':
     gamma = 0.99
     tau = 0.5
     epsilon = 1
-    epsilon_decay = 0.99993
+    epsilon_decay = 0.999
 
     # number of episodes and file path to save the model
-    num_episodes = 100_000
+    num_episodes = 200_000
 
 
     buffer_size = int(1e+5)
     seed = 0
     render = False
     env_name = "Snake-v0PyTorch"
-    gs = (20,20)
+    gs = (8,8)
     env = gym.make(env_name,env_config={"gs": gs,
                                               "BLOCK_SIZE": 20,
                                               "snake_length":0},)
-    env.metadata["render_fps"] = 5
+    env.metadata["render_fps"] = 15
 
 
     model_dir = os.path.join(".", 'Models',env_name + "_" + "x".join([str(g) for g in gs]))
@@ -157,6 +157,11 @@ if __name__ == '__main__':
               w = gs[0],
               action_size=env.action_space.n,
               input_channels = env.reset().shape[0])
+
+    # dqn.load_state_dict(torch.load(
+    #     r".\logs\dqn_Snake-v0PyTorch_20x20\20221212-122608\ffdqn_50000episodes_20000.pth"))
+    #
+
     summary(dqn.cuda(), input_size=env.reset().shape)
     # instantiate memory buffer
     env.reset()

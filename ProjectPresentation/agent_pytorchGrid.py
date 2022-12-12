@@ -121,11 +121,12 @@ class Agent():
         _ = 1
         loss_list = []
         score = 0
+        done = False
         if self.optimal:
             eps = 0
         else:
             eps = max(0.01, self.epsilon * self.epsilon_decay ** episode)
-        while True:
+        while not done:
             action = self.act(state, eps=eps)
             #Perform action
             next_state, reward, done, info = env.step(action)

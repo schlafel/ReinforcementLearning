@@ -1,4 +1,4 @@
-import snake_gym
+
 import gym
 import os
 from agent_pytorchGrid import Agent,ReplayBuffer,ReplayBufferGrid
@@ -12,6 +12,11 @@ import numpy as np
 import tensorflow as tf
 import datetime
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
+# os.chdir("./..")
+import sys
+sys.path.append("./..")
+import snake_gym
+
 class DQN(nn.Module):
 
     def __init__(self,  h, w, action_size = 4,input_channels = 2):
@@ -183,8 +188,11 @@ if __name__ == '__main__':
                   optimal = False)
 
 
-    R,log_dir = DeepQLearning(env, agent, num_episodes, save_model=save_model,
-                      env_name=env_name)
+    R,log_dir = DeepQLearning(env,
+                              agent,
+                              num_episodes,
+                              save_model=save_model,
+                              env_name=env_name)
 
 
 
