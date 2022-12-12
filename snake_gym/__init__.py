@@ -32,8 +32,8 @@ register(
 
 )
 register(
-    id='Snake-v2PyTorch',
-    entry_point='snake_gym.envs:SnakeEnvV2PyTorch',
+    id='Snake-v1PyTorch',
+    entry_point='snake_gym.envs:SnakeEnvV1PyTorch',
 
 )
 

@@ -1,4 +1,5 @@
 import snake_gym
+import pandas as pd
 import gym
 import os
 from agent_pytorchGrid import Agent,ReplayBuffer,ReplayBufferGrid
@@ -29,6 +30,18 @@ def render_video(env,agent, video_path,epsilon = 0.0,debug = False):
         with torch.no_grad():
             action_values = agent.qnetwork_local(state)
 
+        pd.DataFrame([observation], columns=["Danger straight",
+                                             "Danger right",
+                                             "Danger left",
+                                             "Move direction left",
+                                             "Move direction right",
+                                             "Move direction up",
+                                             "Move direction down",
+                                             "Food to the left",
+                                             "Food to the right",
+                                             "Food upwards",
+                                             "Food downwards",
+                                             ]).T
         # observation, reward, done, info = env.step(agent.act(observation,eps=epsilon,debug = debug))
         observation, reward, done, info = env.step(action_values.argmax().item())
         # action_values.argmax().item()

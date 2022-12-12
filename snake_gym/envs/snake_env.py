@@ -93,7 +93,7 @@ class SnakeEnvV0(gym.Env):
         self.clock = None
         self.high_score = 0
         
-        self.reset()
+        # self.reset()
 
     def reset(self,seed = None):
         # reset the environment to initial state
@@ -528,55 +528,6 @@ class SnakeEnvV2(SnakeEnvV1):
         self.food = Point(x, y)
         if self.food in self.snake:
             self._place_food()
-
-
-class SnakeEnvV2PyTorch(SnakeEnvV2):
-    #Agent with Borders
-    def __init__(self,action_map=None,
-                 env_config=None,
-                 render_mode=None):
-        super().__init__(action_map=action_map,
-                 env_config=env_config,
-                 render_mode=None)
-
-
-    def get_observation(self):
-        # reset state
-
-        if self.state is None:
-            state_old = np.zeros((1, self.n_rows, self.n_cols),
-                     dtype=float)
-            state_old = self.set_borders(state_old)
-        else:
-            state_old = self.state[[0],:,:]
-
-        self.state = np.zeros((1,self.n_rows, self.n_cols),
-                              dtype=float)
-        self.calc_distance_food()
-        self.state = self.set_borders(self.state)
-        # update the state (array)
-        # put snake in array (0th channel)
-        for _i,pt in enumerate(reversed(self.snake)):
-            # self.state[int(pt.y // self.n_rows), int(pt.x // self.n_cols), 0] = .5
-            self.state[0, int(pt.y /self.BLOCK_SIZE),
-                       int(pt.x / self.BLOCK_SIZE)] = 1
-        #set Head to 0
-        self.state[0, int(pt.y / self.BLOCK_SIZE), int(pt.x / self.BLOCK_SIZE)] = 3
-
-        # place Food
-        self.state[0, int(self.food.y / self.BLOCK_SIZE),
-                   int(self.food.x / self.BLOCK_SIZE)] = 20
-
-        self.info = dict({"score":self.score,
-                          "food_distance":self.food_distance})
-        return np.concatenate([self.state,state_old])
-
-    def set_borders(self,array):
-        array[0,:,0] = 1
-        array[0, 0,:] = 1
-        array[0,:,self.n_cols-1] = 1
-        array[0,self.n_rows-1,:] = 1
-        return array
 
 
 

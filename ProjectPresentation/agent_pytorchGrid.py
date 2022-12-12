@@ -117,19 +117,19 @@ class Agent():
     def episode(self, env, max_steps=1000,episode = 1):
 
         state = env.reset()
-        score = 0
+        # score = 0
         _ = 1
         loss_list = []
+
+        if self.optimal:
+            eps = 0
+        else:
+            eps = max(0.01, self.epsilon * self.epsilon_decay ** episode)
         while True:
-            if self.optimal:
-                eps = 0
-            else:
-                eps = max(0.01, self.epsilon * self.epsilon_decay**episode)
-
-
             action = self.act(state, eps=eps)
-            #a = env.step(action)
+            #Perform action
             next_state, reward, done, info = env.step(action)
+            #Render if necessary
             if self.render:
                 env.render()
 
@@ -138,7 +138,7 @@ class Agent():
                 loss_list.append(loss)
 
             state = next_state.copy()
-            score += reward
+
             if done:
                 #env.plot_state()
 
@@ -148,7 +148,7 @@ class Agent():
                 break
             _+=1
 
-        return score,_, loss_list,eps
+        return env.score,_, loss_list,eps
 
     def step(self, state, action, reward, next_state, done):
         # Save experience in replay memory
@@ -204,7 +204,7 @@ class Agent():
             state (array_like): current state
             eps (float): epsilon, for epsilon-greedy action selection
         """
-        state = torch.from_numpy(state).unsqueeze(0)#.float().to(self.device)
+        state = torch.from_numpy(state).unsqueeze(0).float()#.to(self.device)
         self.qnetwork_local.eval()
 
         with torch.no_grad():
