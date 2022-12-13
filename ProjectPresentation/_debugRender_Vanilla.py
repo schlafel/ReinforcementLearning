@@ -7,6 +7,15 @@ from VanillaAgent_SnakePyTorch import DQN
 import torch
 from torch import nn
 import torch.nn.functional as F
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib import style
+from tqdm import tqdm
+style.use("ggplot_gundp")
+
+import matplotlib
+matplotlib.use("TkAgg")
 
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 from agent_pytorchGrid import Agent
@@ -54,7 +63,37 @@ def render_video(env,agent, video_path,epsilon = 0.0,debug = False):
     video.close()
     env.close()
 
+def simulate_epochs(env, agent,n_epochs = 100, epsilon=0.0,debug = True):
 
+    list_score = []
+
+    for i in tqdm(range(n_epochs)):
+        observation = env.reset()
+        done = False
+        while not done:
+            #get action values
+            state = torch.from_numpy(observation).unsqueeze(0).float()  # .float().to(self.device)
+            agent.qnetwork_local.eval()
+            with torch.no_grad():
+                action_values = agent.qnetwork_local(state)
+
+            # observation, reward, done, info = env.step(agent.act(observation,eps=epsilon,debug = debug))
+            observation, reward, done, info = env.step(action_values.argmax().item())
+
+            if done:
+                list_score.append((i,env.score))
+                break
+    return pd.DataFrame(list_score,columns=["Epochs","Score"])
+
+def plot_history(df_out,n_rolling = 15):
+    fig, ax = plt.subplots(1)
+    sns.lineplot(x="Epochs", y="Score", data=df_out)
+    ax.plot(df_out["Score"].rolling(n_rolling).mean())
+    ax.axhline(df_out.Score.mean(), color="red", linewidth=1, linestyle="--")
+    plt.tight_layout()
+    ax.set_ylim(0,80)
+    fig.savefig("Results_RollingVanilla_{}.svg".format(n_rolling))
+    return fig,ax
 
 if __name__ == '__main__':
 
@@ -86,6 +125,12 @@ if __name__ == '__main__':
                   render=True,
                   optimal=True,
                   )
+
+    df_out = simulate_epochs(env,agent,n_epochs=1000,epsilon = 0.0,debug = False)
+
+    fig,ax = plot_history(df_out,n_rolling = 20)
+
+
 
     render_video(env, agent, r"VanillaSnake.mp4", epsilon=0.0,debug = True)
 

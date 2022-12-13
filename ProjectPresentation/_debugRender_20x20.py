@@ -2,13 +2,21 @@ import snake_gym
 import gym
 import os
 from agent_pytorchGrid import Agent,ReplayBuffer,ReplayBufferGrid
-
+from tqdm import tqdm
 import torch
 from torch import nn
 import torch.nn.functional as F
 
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 from agent_pytorchGrid import Agent
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib import style
+style.use("ggplot_gundp")
+
+import matplotlib
+matplotlib.use("TkAgg")
 
 class DQN(nn.Module):
 
@@ -68,7 +76,7 @@ class DQN(nn.Module):
 
 def render_video(env,agent, video_path,epsilon = 0.0,debug = False):
 
-    env.metadata["render_fps"] = 10
+    env.metadata["render_fps"] = 15
     video = VideoRecorder(env, video_path)
     # returns an initial observation
     observation = env.reset()
@@ -96,7 +104,37 @@ def render_video(env,agent, video_path,epsilon = 0.0,debug = False):
     video.close()
     env.close()
 
+def simulate_epochs(env, agent,n_epochs = 100, epsilon=0.0,debug = True):
 
+    list_score = []
+
+    for i in tqdm(range(n_epochs)):
+        observation = env.reset()
+        done = False
+        while not done:
+            #get action values
+            state = torch.from_numpy(observation).unsqueeze(0).float()  # .float().to(self.device)
+            agent.qnetwork_local.eval()
+            with torch.no_grad():
+                action_values = agent.qnetwork_local(state)
+
+            # observation, reward, done, info = env.step(agent.act(observation,eps=epsilon,debug = debug))
+            observation, reward, done, info = env.step(action_values.argmax().item())
+
+            if done:
+                list_score.append((i,env.score))
+                break
+    return pd.DataFrame(list_score,columns=["Epochs","Score"])
+
+def plot_history(df_out,n_rolling = 15):
+    fig, ax = plt.subplots(1)
+    sns.lineplot(x="Epochs", y="Score", data=df_out)
+    ax.plot(df_out["Score"].rolling(n_rolling).mean())
+    ax.axhline(df_out.Score.mean(), color="red", linewidth=1, linestyle="--")
+    plt.tight_layout()
+    ax.set_ylim(0,80)
+    fig.savefig("Results_Rolling_{}.svg".format(n_rolling))
+    return fig,ax
 
 if __name__ == '__main__':
 
@@ -115,7 +153,7 @@ if __name__ == '__main__':
               w = gs[0],
               action_size=env.action_space.n,
               input_channels = env.reset().shape[0])
-    dqn.load_state_dict(torch.load(r"./logs/dqn_Snake-v0PyTorch_20x20/20221212-170420/ffdqn_100000episodes_36000.pth"))
+    dqn.load_state_dict(torch.load(r"./logs/dqn_Snake-v0PyTorch_20x20/20221212-210342/ffdqn_20000episodes.pth"))
 
     agent = Agent(dqn,
                   None,
@@ -130,7 +168,15 @@ if __name__ == '__main__':
                   optimal=True,
                   )
 
-    render_video(env, agent, r"SnakeV1_36000.mp4", epsilon=0.0,debug = True)
+    df_out = simulate_epochs(env,agent,n_epochs=1000,epsilon = 0.0,debug = False)
+
+    fig,ax = plot_history(df_out,n_rolling = 20)
+
+
+
+
+
+    render_video(env, agent, r"SnakeV1_Final20000_2.mp4", epsilon=0.0,debug = True)
 
 
     print("done")
