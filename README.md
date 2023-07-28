@@ -94,10 +94,11 @@ Modelling the grid-snake was done using a convolutional neural network (DQN). Th
 A result after training after ~60'000 games is shown in the video below:
 
 
-<video width="640" height="360" controls>
-    <source src="https://github.com/schlafel/ReinforcementLearning/raw/master/Media/209550460-1d87442f-1d5c-47ba-a667-b0ed2e393c32.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-</video>
+https://github.com/schlafel/ReinforcementLearning/assets/68279686/0a59bc22-ca70-4191-a5a0-aad21ba9fc8d
+
+
+
+
 
 # Conclusion
 The Snake Game project presents a practical and entertaining application of reinforcement learning in a classic arcade setting. 
