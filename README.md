@@ -1,4 +1,12 @@
-<h1>Reinforcement learning applied to Snake</h1>
+<h1>Reinforcement learning</h1>
+This repo contains various work done during the CAS Advanced Machine Learning in 2022. 
+It
+
+
+## Game Snake
+
+
+
 Within this project, a new gym implementation for the game Snake has been created. 
 The snake-gym has various different implementations
 
