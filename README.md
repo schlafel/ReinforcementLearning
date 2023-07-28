@@ -80,14 +80,10 @@ This implementation has a grid that is passed as an observation space. The defau
 
   
 # Getting Started
-To get started with the Snake Game and reinforcement learning implementations, please refer to the documentation and code available in this repository. You can find specific instructions on setting up the environment, running the game, and experimenting with reinforcement learning algorithms.
+To get started with the Snake Game and reinforcement learning implementations, please refer to the documentation and code available in this repository. 
+You can find specific instructions on setting up the environment, running the game, and experimenting with reinforcement learning algorithms.
 
-# Conclusion
-The Snake Game project presents a practical and entertaining application of reinforcement learning in a classic arcade setting. By exploring various techniques and environments, this work aims to contribute to the understanding and advancement of reinforcement learning methods.
 
-Feel free to explore the repository and have fun playing the Snake Game! 🐍🍎🎮
-Within this project, a new gym implementation for the game Snake has been created. 
-The snake-gym has various different implementations
 
 
 # Results #
@@ -101,3 +97,10 @@ A result after training after ~60'000 games is shown in the video below:
 
 https://user-images.githubusercontent.com/68279686/209550460-1d87442f-1d5c-47ba-a667-b0ed2e393c32.mp4
 
+# Conclusion
+The Snake Game project presents a practical and entertaining application of reinforcement learning in a classic arcade setting. 
+By exploring various techniques and environments, this work aims to contribute to the understanding and advancement of reinforcement learning methods.
+
+Feel free to explore the repository and have fun playing the Snake Game! 🐍🍎🎮
+Within this project, a new gym implementation for the game Snake has been created. 
+The snake-gym has various different implementations
