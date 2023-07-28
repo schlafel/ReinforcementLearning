@@ -1,12 +1,23 @@
-<h1>Reinforcement learning</h1>
+# Reinforcement learning
 This repo contains various work done during the CAS Advanced Machine Learning in 2022. 
 The goal was to create a snake game. For this endeavour, various other implementations and gyms have been tested.
 
 ## Game Snake
-The Snake Game is a classic arcade game that remains popular for its simplicity and addictiveness. In this game, you take control of a snake that moves around the screen, aiming to eat food and grow longer. The objective is to keep the snake alive for as long as possible without colliding with the walls or itself.
+The Snake Game is a classic arcade game that remains popular for its simplicity and addictiveness. 
+In this game, you take control of a snake that moves around the screen, aiming to eat food and grow longer. 
+The objective is to keep the snake alive for as long as possible without colliding with the walls or itself.
 
 ## How to Play
-Controls: Use the arrow keys (Up, Down, Left, Right) to control the snake's movement. Be mindful of not making rapid 180-degree turns, as this can lead to collisions with the snake's body.
+
+Run 
+```python
+python play_Snake_Human.py
+```
+
+in your console. 
+
+Controls: Use the keys (D,S,W,A) to control the snake's movement. 
+Be mindful of not making rapid 180-degree turns, as this can lead to collisions with the snake's body.
 
 Eating Food: As the snake moves around, it will encounter food represented by small dots. Eating food increases the snake's length by one unit and earns you points.
 
@@ -22,23 +33,20 @@ Increasing Difficulty: As the game progresses and the snake grows longer, the di
 # Project Contents
 This repository contains the following:
 
-- Implementations of the Snake Game using different reinforcement learning techniques.
-- Exploration of various environments using OpenAI Gym for training and evaluation purposes.
+- Implementations of the Snake Game using using own [gym](https://www.gymlibrary.dev/index.html).
+  - [Vanilla Gym of Snake](https://github.com/schlafel/ReinforcementLearning/tree/master/snake_gym)
+  - [Simplified Snake Version](https://github.com/schlafel/ReinforcementLearning/tree/master/snake_gymDirected) (Direct returning is not allowed)
+- Exploration of various environments using OpenAI Gym for training and evaluation purposes. 
+  - [Actor2Critic Implementation for OpenAI-Gym LunarLander](https://github.com/schlafel/ReinforcementLearning/tree/master/a2c_lunarLander)
+  - [Actor2Critic Implementation for OpenAI-Gym CartPole](https://github.com/schlafel/ReinforcementLearning/tree/master/a2c_model_cartpole)
 - Code and resources related to the CAS Advanced Machine Learning course.
 
-  
-# Getting Started
-To get started with the Snake Game and reinforcement learning implementations, please refer to the documentation and code available in this repository. You can find specific instructions on setting up the environment, running the game, and experimenting with reinforcement learning algorithms.
 
-# Conclusion
-The Snake Game project presents a practical and entertaining application of reinforcement learning in a classic arcade setting. By exploring various techniques and environments, this work aims to contribute to the understanding and advancement of reinforcement learning methods.
-
-Feel free to explore the repository and have fun playing the Snake Game! 🐍🍎🎮
-Within this project, a new gym implementation for the game Snake has been created. 
-The snake-gym has various different implementations
-
-### Vanilla Snake 
+# Reinforcement implementation details
+During the project, various different RL-Setups have been tested.  
+## Vanilla Agent 
 The action space for the "vanilla-snake" consists of 3 different actions:
+
 *Move up
 *Move down
 *Move right
@@ -67,6 +75,19 @@ The action space has 11 parameters:
 ## Snake-V2 ##
 This implementation has a grid that is passed as an observation space. The default argument is a 20x20 size grid. 
 
+
+
+
+  
+# Getting Started
+To get started with the Snake Game and reinforcement learning implementations, please refer to the documentation and code available in this repository. You can find specific instructions on setting up the environment, running the game, and experimenting with reinforcement learning algorithms.
+
+# Conclusion
+The Snake Game project presents a practical and entertaining application of reinforcement learning in a classic arcade setting. By exploring various techniques and environments, this work aims to contribute to the understanding and advancement of reinforcement learning methods.
+
+Feel free to explore the repository and have fun playing the Snake Game! 🐍🍎🎮
+Within this project, a new gym implementation for the game Snake has been created. 
+The snake-gym has various different implementations
 
 
 # Results #
